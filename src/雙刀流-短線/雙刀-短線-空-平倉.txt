@@ -1,0 +1,126 @@
+if barinterval <> 15 then RaiseRunTimeError("請設定頻率為15分鐘");
+variable: todayDate(0); todayDate = GetField("Date");
+variable: todayTime(0); todayTime = GetField("Time"); 
+  
+input: costPrice(0);	// 我的成本
+if costPrice = 0 then begin 
+	print("請輸入目前成本!!");
+	return;
+end;
+
+// 計算均線  
+variable: ave135(0); 	ave135 = Average(Close,9);	// 135分鐘均線
+variable: aveDir135(0);	aveDir135 = Sign(ave135 - ave135[1]);	// 135分均線方向
+
+// 計算MACD
+input: FastLength(15), SlowLength(19), MACDLength(10);
+variable: difValue(0), macdValue(0), oscValue(0);
+MACD(weightedclose(), FastLength, SlowLength, MACDLength, difValue, macdValue, oscValue);
+variable: macdDir(0); macdDir = Sign(macdValue - macdValue[2]);		// MACD 方向
+variable: difDir(0); difDir = Sign(difValue - difValue[2]);			// DIF 方向 (向下 => -1)
+variable: macdUnder(0); macdUnder = Sign(difValue - macdValue);		// DIF 和 MACD 的上下位置
+
+print("= 空-平倉 ",DateToString(todayDate)," ",TimeToString(todayTime)," ",NumToStr(close, 0)," =");
+
+// 時間: 08:55 to 13:45
+// 獲利超過10k,7k停利出場
+// 1. 過去3天內獲利超過10k (近3天內獲利有超過200點)
+// 2. 獲利小於7k
+// 3. DIF向上
+// 4. 135分均線方向向上
+if todayTime >= 085500 and todayTime < 134500 then
+begin
+	condition51 = costPrice - lowest(low, 60) > 200;
+	condition52 = costPrice - close < 140;
+	condition53 = difDir = 1;
+	condition54 = aveDir135 = 1;
+	
+	print("多-平倉-策略5: ", condition51, condition52, condition53, condition54);
+	if condition51 and condition52 and condition53 and condition54 then
+	begin
+		ret = 1;
+	end;
+end;
+
+// 時間: 08:55 to 13:45
+// 獲利超過7k,5k停利出場
+// 1. 過去3天內獲利超過7k (近3天內獲利有超過140點)
+// 2. 獲利小於5k
+// 3. DIF向上
+// 4. 135分均線方向向上
+if todayTime >= 085500 and todayTime < 134500 then
+begin
+	condition41 = costPrice - lowest(low, 60) > 140;
+	condition42 = costPrice - close < 100;
+	condition43 = difDir = 1;
+	condition44 = aveDir135 = 1;
+	
+	print("多-平倉-策略4: ", condition41, condition42, condition43, condition44);
+	if condition41 and condition42 and condition43 and condition44 then
+	begin
+		ret = 1;
+	end;
+end;
+
+// 時間: 08:55 to 13:45
+// 獲利超過5k,3k停利出場
+// 1. 過去3天內獲利超過5k (近3天內獲利有超過100點)
+// 2. 獲利小於3k
+// 3. DIF向上
+// 4. 135分均線方向向上
+if todayTime >= 085500 and todayTime < 134500 then
+begin
+	condition31 = costPrice - lowest(low, 60) > 100;
+	condition32 = costPrice - close < 60;
+	condition33 = difDir = 1;
+	condition34 = aveDir135 = 1;
+	
+	print("多-平倉-策略3: ", condition31, condition32, condition33, condition34);
+	if condition31 and condition32 and condition33 and condition34 then
+	begin
+		ret = 1;
+	end;
+end;
+
+
+// 時間: 08:40 to 13:45
+// 小獲利跌勢不足出場, 預防一天跌一天漲 (出場後立即啟動短線策略)
+// 1. 獲利25點之內
+// 2. 135分均線 向上
+// 3. DIF向上
+if todayTime >= 084000 and todayTime < 134500 then
+begin
+	condition21 = costPrice - close < 25;
+	condition22 = aveDir135 = 1;
+	condition23 = difDir = 1;
+	
+	print("多-平倉-策略2: ", condition21, condition22, condition23);
+	if condition21 and condition22 and condition23 then
+	begin
+		ret = 1;
+	end;
+end;
+
+
+
+// 時間: 08:55 to 13:45
+// 大盤走多出場 (適合停利使用)
+// 1. 如果紅盤 => 過去21k線內 DIF值有超過15k(包含)向上(Summation 大於9) or 如果黑盤 => 過去21k線內 DIF值有超過15k(包含)向上(Summation 大於11)
+// 2. DIF向上
+// 3. 指數高於135分均線
+// 4. 指數比過去21K線最低 漲點超過25點
+// 5. 135分均線方向向上
+if todayTime >= 085500 and todayTime < 134500 then
+begin
+	condition11 = (GetQuote("當日漲幅%") > 0 and (Summation(difDir,21) > 9 or Summation(difDir,21) = 9)) or (GetQuote("當日漲幅%") < 0 and (Summation(difDir,21) > 11 or Summation(difDir,21) = 11));
+	condition12 = difDir = 1;
+	condition13 = close > ave135; 
+	condition14 = (close - lowest(low, 21)) > 25;
+	condition15 = aveDir135 = 1;
+	
+	print("空-平倉-策略1: ", condition11, condition12, condition13, condition14, condition15);
+	if condition11 and condition12 and condition13 and condition14 and condition15 then
+	begin
+		ret = 1;
+	end;
+end;
