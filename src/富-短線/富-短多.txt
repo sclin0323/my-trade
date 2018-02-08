@@ -2,8 +2,8 @@
 if barfreq <> "Min" or barinterval <> 1 then RaiseRunTimeError("請設定頻率為1分鐘");
 variable: todayDate(0); todayDate = GetField("Date"); 
 variable: todayTime(0); todayTime = GetField("Time");
-         
-// 計算均線 
+            
+// 計算均線  
 variable: ave8(0);      ave8 = Average(Close,8);    // 8分鐘均線
 variable: ave17(0);     ave17 = Average(Close,17);  // 17分鐘均線
 variable: ave34(0);     ave34 = Average(Close,34);  // 34分鐘均線
@@ -14,7 +14,7 @@ variable: aveDir17(0);  aveDir17 = Sign(ave17 - ave17[1]);  	// 17分鐘均線�
 variable: aveDir34(0);  aveDir34 = Sign(ave34 - ave34[1]);  	// 34分鐘均線方向
 variable: aveDir68(0);  aveDir68 = Sign(ave68 - ave68[1]);  	// 68分鐘均線方向
 variable: aveDir130(0); aveDir130 = Sign(ave130 - ave130[1]);   // 130分鐘均線方向
- 
+  
 // 計算MACD
 input: FastLength(18), SlowLength(32), MACDLength(12);	// 依照XQ軟體預設值
 variable: difValue(0), macdValue(0), oscValue(0);
@@ -24,24 +24,24 @@ variable: difDir(0); difDir = Sign(difValue - difValue[2]);         // DIF 方�
 variable: macdUnder(0); macdUnder = Sign(difValue - macdValue);     // DIF 和 MACD 的上下位置
  
 // 大盤多空判斷
-value1 = GetQuote("委買均") - GetQuote("委賣均");     // 均口差(成交)     作多: 數值越大越好
-value2 = GetQuote("累計委買") - GetQuote("累計委賣");   // 委買口數差(成交) 作多: 數值越大越好
-value3 = GetQuote("累買成筆") - GetQuote("累賣成筆");   // 成交買賣差(成交) 作多: 數值越小越好
-print("= 多 ",DateToString(todayDate),TimeToString(todayTime),"|","指數:",NumToStr(close, 0),"DIF值:",NumToStr(difValue,1),"DIF方向:",NumToStr(difDir,0),"|",NumToStr(value1, 2),NumToStr(value2, 0),NumToStr(value3, 0)," =");
+value1 = GetQuote("累計委買") - GetQuote("累計委賣");   // 委買口數差(成交) 作多: 數值越大越好
+value2 = GetQuote("累買成筆") - GetQuote("累賣成筆");   // 成交買賣差(成交) 作多: 數值越小越好
+print("= 多 ",DateToString(todayDate),TimeToString(todayTime),"|","指數:",NumToStr(close, 0),"DIF值:",NumToStr(difValue,1),"DIF方向:",NumToStr(difDir,0),"|",NumToStr(value1, 2),NumToStr(value2, 0)," =");
 
 
 // 策略執行條件-1
 // 1. 130分鐘線向上
 // 2. 指數高於130分鐘線5分鐘
-// 3. value3 連續3分鐘 < -1000
+// 3. value2 連續3分鐘 < -1000
 condition1 = aveDir130 = 1;
 condition2 = close > ave130 and close[1] > ave130[1] and close[2] > ave130[2] and close[3] > ave130[3] and close[4] > ave130[4];
-condition3 = value3 < -1000 and value3[1] < -1000 and value3[2] < -1000;
+condition3 = value2 < -1000 and value2[1] < -1000 and value2[2] < -1000;
 if not(condition1 or condition2 or condition3) then
 begin
     print("策略執行條件 不成立!!");
     return;
 end;
+
 // 策略執行條件-2: 避免漲幅過大追高
 // 4. 漲幅超過0.8%
 condition4 = GetQuote("當日漲幅%") > 0.8;
@@ -51,6 +51,7 @@ begin
     return;
 end;
 
+///////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // 時間: 09:03 to 09:13
 // 出手時機: 開低走高盤
@@ -61,11 +62,11 @@ end;
 // 5. 成交買賣差5分鐘前要大於10
 if todayTime >= 090300 and todayTime < 091300 then
 begin
-    condition121 = value2 > 2900 and value3 < 10;
+    condition121 = value1 > 2900 and value2 < 10;
     condition122 = difDir = 1 and macdUnder = 1;
     condition123 = close > ave17 and aveDir8 = 1 and aveDir17 = 1;
     condition124 = ave8 + 30 < ave68;
-    condition125 = value3[5] > 10;
+    condition125 = value2[5] > 10;
      
     print("多-策略12: ", condition121, condition122, condition123, condition124, condition125 );
     if condition121 and condition122 and condition123 and condition124 and condition125 then
@@ -84,9 +85,9 @@ end;
 // 6. DIF 趨勢向上 and DIF 小於3.5
 if todayTime >= 090500 and todayTime < 102000 then
 begin
-    condition111 = value2 > 1800 and value3 < -1800;
-    condition112 = (value2 - minlist(value2[1], value2[2], value2[3]) > 1500);
-    condition113 = (maxlist(value3[1], value3[2], value3[3]) - value3 > 600);
+    condition111 = value1 > 1800 and value2 < -1800;
+    condition112 = (value1 - minlist(value1[1], value1[2], value1[3]) > 1500);
+    condition113 = (maxlist(value2[1], value2[2], value2[3]) - value2 > 600);
     condition114 = (aveDir8 = 1) and (aveDir17 = 1) and (aveDir34 = 1) and (aveDir68 = 1);
     condition115 = (ave17 > ave34) and (ave34 > ave68) and close > ave8;
     condition116 = (difValue < 3.5) and (difDir = 1);
@@ -108,8 +109,8 @@ end;
 // 5. DIF 趨勢向上 and DIF 小於3.5
 if todayTime >= 090500 and todayTime < 102000 then
 begin
-    condition101 = value2 > 1000 and value3 < -1800;
-    condition102 = (value2 - minlist(value2[1], value2[2], value2[3], value2[4], value2[5], value2[6], value2[7], value2[8], value2[9]) > 600);
+    condition101 = value1 > 1000 and value2 < -1800;
+    condition102 = (value1 - minlist(value1[1], value1[2], value1[3], value1[4], value1[5], value1[6], value1[7], value1[8], value1[9]) > 600);
     condition103 = (aveDir34 = 1) and (aveDir68 = 1) and (ave34 > ave68);
     condition104 = (close - ave68 < 30) and (close > ave34);
     condition105 = difValue < 3.5 and difDir = 1;
@@ -124,7 +125,7 @@ end;
 
 // 時間: 09:15 to 10:15
 // 出手時機: 開平震盪走高
-// 1. 均口差 > 0.25 and 委買口數差 > -1600 and 成交買賣差 < -700
+// 1. 委買口數差 > -1600 and 成交買賣差 < -700
 // 2. 委買口數差10分鐘內增加1000以上
 // 3. 四線向上
 // 4. 均線3多頭排列 and 17 and 68 分線在15點之內
@@ -133,8 +134,8 @@ end;
 if todayTime >= 091500 and todayTime < 101500 then
 begin
  
-    condition91 = (value1 > 0.25) and  (value2 > -1600) and (value3 < -700);
-    condition92 = (value2 - minlist(value2[1], value2[2], value2[3], value2[4], value2[5], value2[6], value2[7], value2[8], value2[9]) > 1000);
+    condition91 = (value1 > -1600) and (value2 < -700);
+    condition92 = (value1 - minlist(value1[1], value1[2], value1[3], value1[4], value1[5], value1[6], value1[7], value1[8], value1[9]) > 1000);
     condition93 = (aveDir8 = 1) and (aveDir17 = 1) and (aveDir34 = 1) and (aveDir68 = 1);
     condition94 = (ave17 > ave34) and (ave34 > ave68) and (ave17 - ave68 < 15);
     condition95 = ((difValue < 0.55) and (difValue > 0)) and (difDir = 1);
@@ -151,7 +152,7 @@ end;
  
 // 時間: 09:15 to 10:15
 // 出手時機: 小多小步起漲
-// 1. 均口差 > -0.15 and 委買口數差 > 1000 and 成交買賣差 < 750
+// 1. 委買口數差 > 1000 and 成交買賣差 < 750
 // 2. 四線向上
 // 3. 均線多頭排列
 // 4. (DIF < 0.55 and DIF > 0) and DIF 向上
@@ -159,7 +160,7 @@ end;
 if todayTime >= 090400 and todayTime < 101500 then
 begin
  
-    condition81 = (value1 > -0.15) and  (value2 > 1000) and (value3 < 750);
+    condition81 = (value1 > 1000) and (value2 < 750);
     condition82 = (aveDir8 = 1) and (aveDir17 = 1) and (aveDir34 = 1) and (aveDir68 = 1);
     condition83 = (ave8 > ave17) and (ave17 > ave34) and (ave34 > ave68) and (ave17 - ave68 < 30);
     condition84 = ((difValue < 0.55) and (difValue > 0)) and (difDir = 1);
@@ -175,21 +176,23 @@ end;
  
 // 時間: 09:04 to 10:15
 // 出手時機: 散戶做空，開高走高盤中進場
-// 1. 委買口數差 > 1500 且 成交買賣差 < -500
+// 1. 委買口數差 > 1500 且 成交買賣差 < -650
 // 2. 委買口數差10分鐘內增加800
 // 3. 17 34 68 均線趨勢向上
 // 4. 17 34 68 均線多頭排列 and 17和68差距在30點之內
-// 5. DIF 大於 0.5 and 指數大於ave34 and 指數離ave3415點之內
+// 5. DIF 大於 0.5 and 指數大於ave34 and 指數離ave34 15點之內
+// 6. 指數要上漲 GetQuote("當日漲幅%") > 0
 if todayTime >= 090400 and todayTime < 101500 then
 begin
-    condition71 = (value2 > 1500) and (value3 < -500);
-    condition72 = (value2 - minlist(value2[1], value2[2], value2[3], value2[4], value2[5], value2[6], value2[7], value2[8], value2[9]) > 800);
+    condition71 = (value1 > 1500) and (value2 < -650);
+    condition72 = (value1 - minlist(value1[1], value1[2], value1[3], value1[4], value1[5], value1[6], value1[7], value1[8], value1[9]) > 800);
     condition73 = (aveDir17 = 1 and aveDir34= 1 and aveDir68 = 1);
     condition74 = (ave17 > ave34) and (ave34 > ave68) and (ave17 - ave68 < 30);
     condition75 = (difValue > 0.5) and (close > ave34) and (close - ave34 < 15);
+	condition76 = GetQuote("當日漲幅%") > 0;
      
-    print("多-策略07: ", condition71, condition72, condition73, condition74, condition75);
-    if condition71 and condition72 and condition73 and condition74 and condition75 then
+    print("多-策略07: ", condition71, condition72, condition73, condition74, condition75, condition76);
+    if condition71 and condition72 and condition73 and condition74 and condition75 and condition76 then
     begin
         ret = 1;
     end;
@@ -204,7 +207,7 @@ end;
 // 5. 均線糾結(指數離最低均線6點內)
 if todayTime >= 090400 and todayTime < 095400 then
 begin
-    condition61 = (value2 > -1100) and (value2 - minlist(value2[1], value2[2], value2[3], value2[4], value2[5], value2[6], value2[7], value2[8], value2[9]) > 300);
+    condition61 = (value1 > -1100) and (value1 - minlist(value1[1], value1[2], value1[3], value1[4], value1[5], value1[6], value1[7], value1[8], value1[9]) > 300);
     condition62 = (aveDir8 = 1 and aveDir17 = 1 and aveDir34 = 1) and (aveDir8[1] = 1 and aveDir17[1] = 1 and aveDir34[1] = 1);
     condition63 = (difDir = 1) and (difValue > -0.1 and difValue < 0.3);
     condition64 = AbsValue(maxlist(ave8, ave17, ave34, ave68) - minlist(ave8, ave17, ave34, ave68)) < 6;
@@ -220,21 +223,21 @@ end;
 // 時間: 09:10 to 09:44
 // 出手時機: 開高震盪趁再走高
 // 1. 委買口數差10分鐘內增加1000以上
-// 2. 成交買賣差10分鐘內減少200 and 均口差 > -0.1
+// 2. 成交買賣差10分鐘內減少200
 // 3. 四線向上 and 17 34 68多頭排列 and 指數站上8分線上
 // 4. DIF作多 and DIF大於0
 // 5. ave8 和 ave68 差距要小於22
 // 6. vaule3 < -200
-// 7. 如果指數上漲超過0.45 value3 需要 < -1000 (避免震盪盤)
+// 7. 如果指數上漲超過0.45 value2 需要 < -1000 (避免震盪盤)
 if todayTime >= 091000 and todayTime < 094400 then
 begin
-    condition51 = (value2 - minlist(value2[1], value2[2], value2[3], value2[4], value2[5], value2[6], value2[7], value2[8], value2[9]) > 1000);
-    condition52 = (value1 > -0.1) and (maxlist(value3[1], value3[2], value3[3], value3[4], value3[5], value3[6], value3[7], value3[8], value3[9]) - value3 > 200);
+    condition51 = (value1 - minlist(value1[1], value1[2], value1[3], value1[4], value1[5], value1[6], value1[7], value1[8], value1[9]) > 1000);
+    condition52 = (maxlist(value2[1], value2[2], value2[3], value2[4], value2[5], value2[6], value2[7], value2[8], value2[9]) - value2 > 200);
     condition53 = (aveDir8 = 1 and aveDir17 = 1 and aveDir34 = 1 and aveDir68 = 1) and (ave17 > ave34) and (ave34 > ave68) and (close > ave8);
     condition54 = difDir = 1 and difValue > 0;
     condition55 = (ave8 - ave68 < 22);
-	condition56 = value3 < -200;
-	condition57 = (GetQuote("當日漲幅%") < 0.45) or (value3 < -1000);
+	condition56 = value2 < -200;
+	condition57 = (GetQuote("當日漲幅%") < 0.45) or (value2 < -1000);
      
     print("多-策略05: ", condition51, condition52, condition53, condition54, condition55, condition56, condition57);
     if condition51 and condition52 and condition53 and condition54 and condition55 and condition56 and condition57 then
@@ -253,7 +256,7 @@ end;
 // 5. ave8 和 ave68 差距要大於1 and 小於8 (均線糾結剛散開)
 if todayTime >= 090400 and todayTime < 101500 then
 begin
-    condition41 = value2 < 500 and (value2 - minlist(value2[1], value2[2], value2[3], value2[4], value2[5], value2[6], value2[7], value2[8], value2[9]) > 500);
+    condition41 = value1 < 500 and (value1 - minlist(value1[1], value1[2], value1[3], value1[4], value1[5], value1[6], value1[7], value1[8], value1[9]) > 500);
     condition42 = (aveDir8 = 1 and aveDir17 = 1 and aveDir34 = 1) and (aveDir8[1] = 1 and aveDir17[1] = 1 and aveDir34[1] = 1) and (aveDir8[2] = 1 and aveDir17[2] = 1 and aveDir34[2] = 1);
     condition43 = (aveDir8 > aveDir17 and aveDir17 > aveDir34 and aveDir34 > aveDir68) and close > ave8;
     condition44 = (macdUnder = 1) and difDir = 1;
@@ -271,14 +274,16 @@ end;
 // 1. MACD處黃金交叉 and DIF向上
 // 2. 10分鐘內有出現 8分線 黃金交叉 68分線
 // 3. 8分線向上 and 68分線連續50分鐘都是上升
+// 4. 委買口數差 > 600 and 成交買賣差 < -300
 if todayTime >= 091000 and todayTime < 100500 then
 begin
     condition31 = (macdUnder = 1) and difDir = 1;
     condition32 = isAveGoldenCrossInMinutes(8, 68, 10);
     condition33 = isAveRaiseOverMinutes(68, 50) and aveDir8 = 1;
+	condition34 = value1 > 600 and value2 < -300;
      
-    print("多-策略03: ", condition31, condition32, condition33);
-    if condition31 and condition32 and condition33 then
+    print("多-策略03: ", condition31, condition32, condition33, condition34);
+    if condition31 and condition32 and condition33 and condition34 then
     begin
         ret = 1;
     end;
@@ -292,15 +297,15 @@ end;
 // 3. 指數離34分線21點內
 // 4. 三線向上(8分線怕短線急跌造成短線下彎) and 指數站上34分線上
 // 5. 成交買賣差 < -300
-// 6. 如果指數上漲超過0.45 value3 需要 < -1000 (避免震盪盤)
+// 6. 如果指數上漲超過0.45 value2 需要 < -1000 (避免震盪盤)
 if todayTime >= 091000 and todayTime < 095500 then
 begin
-    condition21 = value2 > 1800 and maxlist(value2[1], value2[2], value2[3], value2[4], value2[5]) - value2 < 200;
+    condition21 = value1 > 1800 and maxlist(value1[1], value1[2], value1[3], value1[4], value1[5]) - value1 < 200;
     condition22 = (difValue - difValue[1] > 0);
     condition23 = (close - 21) < ave34;
     condition24 = (aveDir17 = 1 and aveDir34 = 1 and aveDir68 = 1) and close > ave34;
-    condition25 = value3 < -300;
-	condition26 = (GetQuote("當日漲幅%") < 0.45) or (value3 < -1000);
+    condition25 = value2 < -300;
+	condition26 = (GetQuote("當日漲幅%") < 0.45) or (value2 < -1000);
     
     print("多-策略02: ", condition21, condition22, condition23, condition24, condition25, condition26);
     if condition21 and condition22 and condition23 and condition24 and condition25 and condition26 then
@@ -312,20 +317,20 @@ end;
  
 // 時間: 0903 to 09:55
 // 出手時機:
-// 1. 開平盤逐漸起漲: 委買口數差 > 750 and 委買口數差10分鐘內成長500 and 成交買賣差 < -300 and 均口差>-0.3
+// 1. 開平盤逐漸起漲: 委買口數差 > 750 and 委買口數差10分鐘內成長500 and 成交買賣差 < -300
 // 2. 8 17 34 68 都向上
 // 3. macd 黃金交叉
-// 4. 股數離34分線 21 點之內 and 全均線之上
+// 4. 股數離34分線 25 點之內 and 全均線之上
 // 5. DIF 向上
-// 6. 如果指數上漲超過0.45 value3 需要 < -1000 (避免震盪盤)
+// 6. 如果指數上漲超過0.45 value2 需要 < -1000 (避免震盪盤)
 if todayTime >= 090300 and todayTime < 095500 then
 begin
-    condition11 = value2 > 750 and (value2 > minlist(value2[1], value2[2], value2[3], value2[4], value2[5], value2[6], value2[7], value2[8], value2[9])+500) and value3 < -300 and value1 > -0.3;
+    condition11 = value1 > 750 and (value1 > minlist(value1[1], value1[2], value1[3], value1[4], value1[5], value1[6], value1[7], value1[8], value1[9])+500) and value2 < -300;
     condition12 = (aveDir8 = 1 and aveDir17 = 1 and aveDir34 = 1 and aveDir68 = 1);
     condition13 = (macdUnder = 1);
-    condition14 = close > ave8 and close > ave17 and close > ave34 and close > ave68 and (close - 21) < ave34;
+    condition14 = close > ave8 and close > ave17 and close > ave34 and close > ave68 and (close - 25) < ave34;
 	condition15 = difDir = 1;
-	condition16 = (GetQuote("當日漲幅%") < 0.45) or (value3 < -1000);
+	condition16 = (GetQuote("當日漲幅%") < 0.45) or (value2 < -1000);
      
     print("多-策略01: ", condition11, condition12, condition13, condition14, condition15, condition16);
     if condition11 and condition12 and condition13 and condition14 and condition15 and condition16 then

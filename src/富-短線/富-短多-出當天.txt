@@ -1,7 +1,7 @@
 if barinterval <> 1 then RaiseRunTimeError("請設定頻率為1分鐘");
 variable: todayDate(0); todayDate = GetField("Date");
 variable: todayTime(0); todayTime = GetField("Time"); 
- 
+   
 // 我的成本  
 input: cost(0);	
 if cost = 0 then begin 
@@ -146,7 +146,8 @@ end;
 // 2. 指數低於68分線
 // 3. 獲利連續2分鐘低於15點
 // 4. DIF向下 
-if (todayTime >= 1150000 and todayTime < 134500) or (Highest(close, 600) - close > 200 ) then
+//if (todayTime >= 1150000 and todayTime < 134500) or (Highest(close, 600) - close > 200 ) then
+if (todayTime >= 115000 and todayTime < 134500) then
 begin
 	condition11 = aveDir68 = -1 and aveDir68[1] = -1 and aveDir68[2] = -1;
 	condition12 = close < ave68;

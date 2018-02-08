@@ -2,7 +2,7 @@
 if barinterval <> 60 then RaiseRunTimeError("請設定頻率為60分鐘");
 variable: todayDate(0); todayDate = GetField("Date"); 
 variable: todayTime(0); todayTime = GetField("Time");
-  
+     
 // 計算均線
 variable: ave2(0); 		ave2 = Average(Close,2);			// 2小時均線
 variable: ave18(0); 	ave18 = Average(Close,18);			// 18小時均線	
@@ -22,27 +22,31 @@ variable: macdUnder(0); macdUnder = Sign(difValue - macdValue);		// DIF 和 MACD
 
 
 // 盤中資訊
+print("==============================================================");
 print("aveDir18 分數(需小於-7):",NumToStr(Summation(aveDir18,15),0));
 print("DIF方向(需為負向):",difDir);
 print("指數(要低於ave18):",NumToStr(close, 0)," ave18:",NumToStr(ave18,0));
 print("2小時均線方向(需為負向):",aveDir2);
 print("90小時線離指數差(需小於150):",ave90-close);
+print("季線(90小時)方向:",aveDir300);
 
 
-// 雙刀-長線-空 進場
-// 1. 過去15K當中 aveDir18 有超過11K向下
-// 2. DIF向下
-// 3. 指數低於 ave18
-// 4. 2小時均線方向 = -1
-// 5. 90小時均線離指數乖離要小於150點
-condition11 = (Summation(aveDir18,15) < -7 or Summation(aveDir18,15) = -7);
-condition12 = difDir = -1;
-condition13 = close < ave18;
-condition14 = aveDir2 = -1;
-condition15 = ave90 - close < 150;
-	
-print("雙刀-長線-空 策略1: ",DateToString(todayDate),TimeToString(todayTime), condition11, condition12, condition13, condition14, condition15);
-if condition11 and condition12 and condition13 and condition14 and condition15 then
+// 雙刀-長線-空 進場 (漲回季線, 季線向下 寬鬆賣點)
+// 1. 季線向下 and 指數過去3天有高於季線-35點
+// 2. 過去15K當中 aveDir18 有超過9K向下
+// 3. DIF向下
+// 4. 指數低於 ave18
+// 5. 2小時均線方向 = -1
+// 6. 90小時乖離要小於150
+condition31 = aveDir300 = -1 and (highest(high, 15) > ave300 - 35);
+condition32 = (Summation(aveDir18,15) < -3 or Summation(aveDir18,15) = -3);
+condition33 = difDir = -1;
+condition34 = close < ave18;
+condition35 = aveDir2 = -1;
+condition36 = ave90 - close < 150;
+
+print("富-長空 策略3: ",DateToString(todayDate),TimeToString(todayTime), condition31, condition32, condition33, condition34, condition35, condition36 );
+if condition31 and condition32 and condition33 and condition34 and condition35 and condition36 then
 begin
 	ret = 1;
 end;
@@ -61,28 +65,29 @@ condition24 = close < ave18;
 condition25 = aveDir2 = -1;
 condition26 = ave90 - close < 150;
 
-print("雙刀-長線-空 策略2: ",DateToString(todayDate),TimeToString(todayTime), condition21, condition22, condition23, condition24, condition25, condition26 );
+print("富-長空 策略2: ",DateToString(todayDate),TimeToString(todayTime), condition21, condition22, condition23, condition24, condition25, condition26 );
 if condition21 and condition22 and condition23 and condition24 and condition25 and condition26 then
 begin
 	ret = 1;
 end;
 
-// 雙刀-長線-空 進場 (漲回季線, 季線向下 寬鬆賣點)
-// 1. 季線向下 and 指數過去3天有高於季線-35點
-// 2. 過去15K當中 aveDir18 有超過9K向下
-// 3. DIF向下
-// 4. 指數低於 ave18
-// 5. 2小時均線方向 = -1
-// 6. 90小時乖離要小於150
-condition31 = aveDir300 = -1 and (highest(high, 15) > ave300 - 35);
-condition32 = (Summation(aveDir18,15) < -3 or Summation(aveDir18,15) = -3);
-condition33 = difDir = -1;
-condition34 = close < ave18;
-condition35 = aveDir2 = -1;
-condition36 = ave90 - close < 150;
-
-print("雙刀-長線-空 策略3: ",DateToString(todayDate),TimeToString(todayTime), condition31, condition32, condition33, condition34, condition35, condition36 );
-if condition31 and condition32 and condition33 and condition34 and condition35 and condition36 then
+// 雙刀-長線-空 進場
+// 1. 過去15K當中 aveDir18 有超過11K向下
+// 2. DIF向下
+// 3. 指數低於 ave18
+// 4. 2小時均線方向 = -1
+// 5. 90小時均線離指數乖離要小於150點
+condition11 = (Summation(aveDir18,15) < -7 or Summation(aveDir18,15) = -7);
+condition12 = difDir = -1;
+condition13 = close < ave18;
+condition14 = aveDir2 = -1;
+condition15 = ave90 - close < 150;
+	
+print("富-長空 策略1: ",DateToString(todayDate),TimeToString(todayTime), condition11, condition12, condition13, condition14, condition15);
+if condition11 and condition12 and condition13 and condition14 and condition15 then
 begin
 	ret = 1;
 end;
+
+
+
