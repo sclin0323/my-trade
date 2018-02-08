@@ -1,48 +1,70 @@
-if barinterval <> 15 then RaiseRunTimeError("è«‹è¨­å®šé »ç‡ç‚º15åˆ†é˜");
+if barinterval <> 15 then RaiseRunTimeError("½Ğ³]©wÀW²v¬°15¤ÀÄÁ");
 variable: todayDate(0); todayDate = GetField("Date");
 variable: todayTime(0); todayTime = GetField("Time"); 
 
-// è¨ˆç®—å‡ç·š  
-variable: ave72(0); 	ave72 = Average(Close,72);			// 18å°æ™‚K (3~4å¤©)
-variable: ave1200(0); 	ave1200 = Average(Close,1200);		// å­£ç·š
-variable: aveDir72(0);	aveDir72 = Sign(ave72 - ave72[1]);	// 18å°æ™‚å‡ç·šæ–¹å‘
-variable: aveDir1200(0);	aveDir1200 = Sign(ave1200 - ave1200[1]);	// å­£ç·šæ–¹å‘
+input: costPrice(0);	// §Úªº¦¨¥»
+if costPrice = 0 then begin 
+	print("½Ğ¿é¤J¥Ø«e¦¨¥»!!");
+	return;
+end; 
+  
+// ­pºâ§¡½u  
+variable: ave72(0); 	ave72 = Average(Close,72);			// 18¤p®ÉK (3~4¤Ñ)
+variable: ave1200(0); 	ave1200 = Average(Close,1200);		// ©u½u
+variable: aveDir72(0);	aveDir72 = Sign(ave72 - ave72[1]);	// 18¤p®É§¡½u¤è¦V
+variable: aveDir1200(0);	aveDir1200 = Sign(ave1200 - ave1200[1]);	// ©u½u¤è¦V
 
-// è¨ˆç®—MACD
+// ­pºâMACD
 input: FastLength(15), SlowLength(19), MACDLength(10);
 variable: difValue(0), macdValue(0), oscValue(0);
 MACD(weightedclose(), FastLength, SlowLength, MACDLength, difValue, macdValue, oscValue);
-variable: macdDir(0); macdDir = Sign(macdValue - macdValue[2]);		// MACD æ–¹å‘
-variable: difDir(0); difDir = Sign(difValue - difValue[2]);			// DIF æ–¹å‘ (å‘ä¸‹ => -1)
-variable: macdUnder(0); macdUnder = Sign(difValue - macdValue);		// DIF å’Œ MACD çš„ä¸Šä¸‹ä½ç½®
+variable: macdDir(0); macdDir = Sign(macdValue - macdValue[2]);		// MACD ¤è¦V
+variable: difDir(0); difDir = Sign(difValue - difValue[2]);			// DIF ¤è¦V (¦V¤U => -1)
+variable: macdUnder(0); macdUnder = Sign(difValue - macdValue);		// DIF ©M MACD ªº¤W¤U¦ì¸m
 
-print("= å¯Œ-é•·ç©º-å‡º ",DateToString(todayDate)," ",TimeToString(todayTime)," ",NumToStr(close, 0)," =");
+print("= ´I-ªøªÅ-¥X ",DateToString(todayDate)," ",TimeToString(todayTime)," ",NumToStr(close, 0)," =");
 
-// å¯Œ-é•·ç©º-å‡º ç­–ç•¥2: é‡ä¸Šå‡å­£ç·š, ææ—©å‡ºå ´
-// 1. å­£ç·šå‘ä¸Š
-// 2. DIF 8kæœ‰6kå‘ä¸Š
-// 3. 5å°æ™‚å…§æœ€ä½é» - å­£ç·š < 30é»(æŒ‡æ•¸ä¾†åˆ°ä¸Šå‡å­£ç·š)
-// 4. 5å°æ™‚å…§åå½ˆä¸Šæ¼²è¶…é40é»
-condition21 = aveDir1200 = 1;
-condition22 = Summation(difDir,8) > 4 or Summation(difDir,8) = 4;
-condition23 = Lowest(low, 20) - ave1200 < 30;
+// ´I-ªø¦h-¥X µ¦²¤3: ¨S¦³Àò§Q,ªøªÅ´£«e¥X³õ
+// 1. ¨S¦³Àò§Q
+// 2. 72K½uÁÍ¶Õ¦V¤W
+// 3. DIF¦V¤W
+// 4. «ü¼Æ°ª©ó72k½uK
+condition31 = close - costPrice > 0;
+condition32 = aveDir72 = 1;
+condition33 = difDir = 1;
+condition34 = close > ave72;
+
+print("´I-ªø¦h-¥X µ¦²¤3: ", condition31, condition32, condition33, condition34, "¨S¦³Àò§Q,ªøªÅ´£«e¥X³õ");
+if condition31 and condition32 and condition33 and condition34 then
+begin
+	ret = 1;
+end;
+
+// ´I-ªøªÅ-¥X µ¦²¤2: ¹J¤W¤É©u½u, ´£¦­¥X³õ
+// 1. 5¤p®É¤º³Ì§CÂI - ©u½u < 30ÂI(«ü¼Æ¨Ó¨ì¤W¤É©u½u)
+// 2. ©u½u¦V¤W
+// 3. DIF 8k¦³6k¦V¤W
+// 4. 5¤p®É¤º¤Ï¼u¤Wº¦¶W¹L40ÂI
+condition21 = Lowest(low, 20) - ave1200 < 30;
+condition22 = aveDir1200 = 1;
+condition23 = Summation(difDir,8) > 4 or Summation(difDir,8) = 4;
 condition24 = close - Lowest(low, 20) > 40;
 
-print("å¯Œ-é•·ç©º-å‡º ç­–ç•¥2: ", condition21, condition22, condition23, condition24,"é‡ä¸Šå‡å­£ç·š, ææ—©å‡ºå ´");
+print("´I-ªøªÅ-¥X µ¦²¤2: ", condition21, condition22, condition23, condition24,"¹J¤W¤É©u½u, ´£¦­¥X³õ");
 if condition21 and condition22 and condition23 and condition24 then
 begin
 	ret = 1;
 end;
 
-// å¯Œ-é•·ç©º-å‡º ç­–ç•¥1: 72kç·šDIFå‘ä¸Š
-// 1. 72Kç·šè¶¨å‹¢å‘ä¸Š
-// 2. DIFå‘ä¸Šé€£çºŒ3kå‘ä¸Š
-// 3. æŒ‡æ•¸é«˜æ–¼72kç·šK 3K
+// ´I-ªøªÅ-¥X µ¦²¤1: 72k½uDIF¦V¤W
+// 1. 72K½u³sÄò3kÁÍ¶Õ¦V¤W
+// 2. DIF¦V¤W³sÄò3k¦V¤W
+// 3. «ü¼Æ°ª©ó72k½uK³sÄò3k
 condition11 = aveDir72 = 1 and aveDir72[1] = 1 and aveDir72[2] = 1;
 condition12 = difDir = 1 and difDir[1] = 1 and difDir[2] = 1;
 condition13 = close > ave72 and close[1] > ave72[1] and close[2] > ave72[2];
 
-print("å¯Œ-é•·ç©º-å‡º ç­–ç•¥1: ", condition11, condition12, condition13,"72kç·šDIFå‘ä¸Š");
+print("´I-ªøªÅ-¥X µ¦²¤1: ", condition11, condition12, condition13,"72k½uDIF¦V¤W");
 if condition11 and condition12 and condition13 then
 begin
 	ret = 1;

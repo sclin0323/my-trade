@@ -1,89 +1,89 @@
-// åŸ·è¡Œé »ç‡éœ€ç‚º 60 åˆ†é˜
-if barinterval <> 60 then RaiseRunTimeError("è«‹è¨­å®šé »ç‡ç‚º60åˆ†é˜");
+// °õ¦æÀW²v»İ¬° 60 ¤ÀÄÁ
+if barinterval <> 60 then RaiseRunTimeError("½Ğ³]©wÀW²v¬°60¤ÀÄÁ");
 variable: todayDate(0); todayDate = GetField("Date"); 
 variable: todayTime(0); todayTime = GetField("Time");
-     
-// è¨ˆç®—å‡ç·š
-variable: ave2(0); 		ave2 = Average(Close,2);			// 2å°æ™‚å‡ç·š
-variable: ave18(0); 	ave18 = Average(Close,18);			// 18å°æ™‚å‡ç·š	
-variable: ave90(0); 	ave90 = Average(Close,90);			// 90å°æ™‚å‡ç·š
-variable: ave300(0); 	ave300 = Average(Close,300);		// 300å°æ™‚å‡ç·š(å­£ç·š)
-variable: aveDir2(0);	aveDir2 = Sign(ave2 - ave2[1]);		// 2å°æ™‚å‡ç·šæ–¹å‘
-variable: aveDir18(0);	aveDir18 = Sign(ave18 - ave18[1]);	// 18å°æ™‚å‡ç·šæ–¹å‘ 
-variable: aveDir300(0);	aveDir300 = Sign(ave300 - ave300[1]);	// 300å°æ™‚å‡ç·šæ–¹å‘(å­£ç·š)
+       
+// ­pºâ§¡½u
+variable: ave2(0); 		ave2 = Average(Close,2);			// 2¤p®É§¡½u
+variable: ave18(0); 	ave18 = Average(Close,18);			// 18¤p®É§¡½u	
+variable: ave90(0); 	ave90 = Average(Close,90);			// 90¤p®É§¡½u
+variable: ave300(0); 	ave300 = Average(Close,300);		// 300¤p®É§¡½u(©u½u)
+variable: aveDir2(0);	aveDir2 = Sign(ave2 - ave2[1]);		// 2¤p®É§¡½u¤è¦V
+variable: aveDir18(0);	aveDir18 = Sign(ave18 - ave18[1]);	// 18¤p®É§¡½u¤è¦V 
+variable: aveDir300(0);	aveDir300 = Sign(ave300 - ave300[1]);	// 300¤p®É§¡½u¤è¦V(©u½u)
 
-// è¨ˆç®—MACD
-input: FastLength(12), SlowLength(26), MACDLength(9);	// ä¾ç…§XQè»Ÿé«”é è¨­å€¼
+// ­pºâMACD
+input: FastLength(12), SlowLength(26), MACDLength(9);	// ¨Ì·ÓXQ³nÅé¹w³]­È
 variable: difValue(0), macdValue(0), oscValue(0);
 MACD(weightedclose(), FastLength, SlowLength, MACDLength, difValue, macdValue, oscValue);
-variable: macdDir(0); macdDir = Sign(macdValue - macdValue[2]);		// MACD æ–¹å‘
-variable: difDir(0); difDir = Sign(difValue - difValue[2]);			// DIF æ–¹å‘ (å‘ä¸‹ => -1)
-variable: macdUnder(0); macdUnder = Sign(difValue - macdValue);		// DIF å’Œ MACD çš„ä¸Šä¸‹ä½ç½®
+variable: macdDir(0); macdDir = Sign(macdValue - macdValue[2]);		// MACD ¤è¦V
+variable: difDir(0); difDir = Sign(difValue - difValue[2]);			// DIF ¤è¦V (¦V¤U => -1)
+variable: macdUnder(0); macdUnder = Sign(difValue - macdValue);		// DIF ©M MACD ªº¤W¤U¦ì¸m
 
 
-// ç›¤ä¸­è³‡è¨Š
+// ½L¤¤¸ê°T
 print("==============================================================");
-print("aveDir18 åˆ†æ•¸(éœ€å°æ–¼-7):",NumToStr(Summation(aveDir18,15),0));
-print("DIFæ–¹å‘(éœ€ç‚ºè² å‘):",difDir);
-print("æŒ‡æ•¸(è¦ä½æ–¼ave18):",NumToStr(close, 0)," ave18:",NumToStr(ave18,0));
-print("2å°æ™‚å‡ç·šæ–¹å‘(éœ€ç‚ºè² å‘):",aveDir2);
-print("90å°æ™‚ç·šé›¢æŒ‡æ•¸å·®(éœ€å°æ–¼150):",ave90-close);
-print("å­£ç·š(90å°æ™‚)æ–¹å‘:",aveDir300);
+print("aveDir18 ¤À¼Æ(»İ¤p©ó-7):",NumToStr(Summation(aveDir18,15),0));
+print("DIF¤è¦V(»İ¬°­t¦V):",difDir);
+print("«ü¼Æ(­n§C©óave18):",NumToStr(close, 0)," ave18:",NumToStr(ave18,0));
+print("2¤p®É§¡½u¤è¦V(»İ¬°­t¦V):",aveDir2);
+print("¤ë½u(90¤p®É)½uÂ÷«ü¼Æ®t(»İ¤p©ó240):",ave90-close);
+print("©u½u(300¤p®É)¤è¦V:",aveDir300);
 
 
-// é›™åˆ€-é•·ç·š-ç©º é€²å ´ (æ¼²å›å­£ç·š, å­£ç·šå‘ä¸‹ å¯¬é¬†è³£é»)
-// 1. å­£ç·šå‘ä¸‹ and æŒ‡æ•¸éå»3å¤©æœ‰é«˜æ–¼å­£ç·š-35é»
-// 2. éå»15Kç•¶ä¸­ aveDir18 æœ‰è¶…é9Kå‘ä¸‹
-// 3. DIFå‘ä¸‹
-// 4. æŒ‡æ•¸ä½æ–¼ ave18
-// 5. 2å°æ™‚å‡ç·šæ–¹å‘ = -1
-// 6. 90å°æ™‚ä¹–é›¢è¦å°æ–¼150
+// Âù¤M-ªø½u-ªÅ ¶i³õ (º¦¦^©u½u, ©u½u¦V¤U ¼eÃP½æÂI)
+// 1. ©u½u¦V¤U and «ü¼Æ¹L¥h3¤Ñ¦³°ª©ó©u½u-35ÂI
+// 2. ¹L¥h15K·í¤¤ aveDir18 ¦³¶W¹L9K¦V¤U
+// 3. DIF¦V¤U
+// 4. «ü¼Æ§C©ó ave18
+// 5. 2¤p®É§¡½u¤è¦V = -1
+// 6. 90¤p®É¨ÄÂ÷­n¤p©ó240(­ì:180)
 condition31 = aveDir300 = -1 and (highest(high, 15) > ave300 - 35);
 condition32 = (Summation(aveDir18,15) < -3 or Summation(aveDir18,15) = -3);
 condition33 = difDir = -1;
 condition34 = close < ave18;
 condition35 = aveDir2 = -1;
-condition36 = ave90 - close < 150;
+condition36 = ave90 - close < 240;
 
-print("å¯Œ-é•·ç©º ç­–ç•¥3: ",DateToString(todayDate),TimeToString(todayTime), condition31, condition32, condition33, condition34, condition35, condition36 );
+print("´I-ªøªÅ µ¦²¤3: ",DateToString(todayDate),TimeToString(todayTime), condition31, condition32, condition33, condition34, condition35, condition36 );
 if condition31 and condition32 and condition33 and condition34 and condition35 and condition36 then
 begin
 	ret = 1;
 end;
 
-// é›™åˆ€-é•·ç·š-ç©º é€²å ´ (å‡ºç¾å¤§è·Œ, ææ—©æ”¾ç©º)
-// 1. éå»15Kç•¶ä¸­ aveDir18 æœ‰è¶…é10Kå‘ä¸‹
-// 2. éå»5kç•¶ä¸­å¤§è·Œè¶…é100é»
-// 3. DIFå‘ä¸‹
-// 4. æŒ‡æ•¸ä½æ–¼ ave18
-// 5. 2å°æ™‚å‡ç·šæ–¹å‘ = -1
-// 6. 90å°æ™‚å‡ç·šé›¢æŒ‡æ•¸ä¹–é›¢è¦å°æ–¼150é»
+// Âù¤M-ªø½u-ªÅ ¶i³õ (¥X²{¤j¶^, ´£¦­©ñªÅ)
+// 1. ¹L¥h15K·í¤¤ aveDir18 ¦³¶W¹L10K¦V¤U
+// 2. ¹L¥h5k·í¤¤¤j¶^¶W¹L100ÂI
+// 3. DIF¦V¤U
+// 4. «ü¼Æ§C©ó ave18
+// 5. 2¤p®É§¡½u¤è¦V = -1
+// 6. 90¤p®É§¡½uÂ÷«ü¼Æ¨ÄÂ÷­n¤p©ó240ÂI(­ì:180)
 condition21 = (Summation(aveDir18,15) < -5 or Summation(aveDir18,15) = -5);
 condition22 = highest(high, 6) - close > 100;
 condition23 = difDir = -1;
 condition24 = close < ave18;
 condition25 = aveDir2 = -1;
-condition26 = ave90 - close < 150;
+condition26 = ave90 - close < 240;
 
-print("å¯Œ-é•·ç©º ç­–ç•¥2: ",DateToString(todayDate),TimeToString(todayTime), condition21, condition22, condition23, condition24, condition25, condition26 );
+print("´I-ªøªÅ µ¦²¤2: ",DateToString(todayDate),TimeToString(todayTime), condition21, condition22, condition23, condition24, condition25, condition26 );
 if condition21 and condition22 and condition23 and condition24 and condition25 and condition26 then
 begin
 	ret = 1;
 end;
 
-// é›™åˆ€-é•·ç·š-ç©º é€²å ´
-// 1. éå»15Kç•¶ä¸­ aveDir18 æœ‰è¶…é11Kå‘ä¸‹
-// 2. DIFå‘ä¸‹
-// 3. æŒ‡æ•¸ä½æ–¼ ave18
-// 4. 2å°æ™‚å‡ç·šæ–¹å‘ = -1
-// 5. 90å°æ™‚å‡ç·šé›¢æŒ‡æ•¸ä¹–é›¢è¦å°æ–¼150é»
+// Âù¤M-ªø½u-ªÅ ¶i³õ
+// 1. ¹L¥h15K·í¤¤ aveDir18 ¦³¶W¹L11K¦V¤U
+// 2. DIF¦V¤U
+// 3. «ü¼Æ§C©ó ave18
+// 4. 2¤p®É§¡½u¤è¦V = -1
+// 5. 90¤p®É§¡½uÂ÷«ü¼Æ¨ÄÂ÷­n¤p©ó240ÂI(­ì:180)
 condition11 = (Summation(aveDir18,15) < -7 or Summation(aveDir18,15) = -7);
 condition12 = difDir = -1;
 condition13 = close < ave18;
 condition14 = aveDir2 = -1;
-condition15 = ave90 - close < 150;
+condition15 = ave90 - close < 240;
 	
-print("å¯Œ-é•·ç©º ç­–ç•¥1: ",DateToString(todayDate),TimeToString(todayTime), condition11, condition12, condition13, condition14, condition15);
+print("´I-ªøªÅ µ¦²¤1: ",DateToString(todayDate),TimeToString(todayTime), condition11, condition12, condition13, condition14, condition15);
 if condition11 and condition12 and condition13 and condition14 and condition15 then
 begin
 	ret = 1;
