@@ -1,7 +1,7 @@
 if barinterval <> 1 then RaiseRunTimeError("請設定頻率為1分鐘");
 variable: todayDate(0); todayDate = GetField("Date");
 variable: todayTime(0); todayTime = GetField("Time"); 
-
+  
 // 我的成本 
 input: cost(0);	
 if cost = 0 then begin 
@@ -31,8 +31,43 @@ variable: macdUnder(0); macdUnder = Sign(difValue - macdValue);		// DIF 和 MACD
 
 print("= 空-平倉當天 ",DateToString(todayDate)," ",TimeToString(todayTime)," ",NumToStr(close, 0)," =");
 
-// 時間: 09:30 to 11:05
-// 策略4: 停損出場
+
+// 時間: 09:30 to 10:30
+// 策略6: 停損出場(早盤多方趨勢, 提早停損)
+// 1. 虧損28點停損出場
+// 2. 平盤之上
+if todayTime >= 093000 and todayTime < 103000 then
+begin
+	condition61 = close - cost > 28;
+	condition62 = GetQuote("當日漲幅%") > 0;
+	
+	print("多-平倉當天-策略6: ", condition61, condition62);
+	if condition61 and condition62 then
+	begin
+		ret = 1;
+	end;
+end;
+
+// 時間: 09:30 to 10:30
+// 策略5: 停損出場(早盤多方趨勢, 提早停損)
+// 1. 虧損28點停損出場
+// 2. 130分均線向上
+// 3. DIF向上
+if todayTime >= 093000 and todayTime < 103000 then
+begin
+	condition51 = close - cost > 28;
+	condition52 = aveDir130 = 1;
+	condition53 = difDir = 1;
+	
+	print("多-平倉當天-策略5: ", condition51, condition52, condition53);
+	if condition51 and condition52 and condition53 then
+	begin
+		ret = 1;
+	end;
+end;
+
+// 時間: 10:30 to 11:05
+// 策略4: 一般停損出場
 // 1. 虧損28點停損出場
 if todayTime >= 093000 and todayTime < 110500 then
 begin

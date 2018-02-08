@@ -1,7 +1,7 @@
 if barinterval <> 15 then RaiseRunTimeError("請設定頻率為15分鐘");
 variable: todayDate(0); todayDate = GetField("Date");
 variable: todayTime(0); todayTime = GetField("Time"); 
-  
+    
 input: costPrice(0);	// 我的成本
 if costPrice = 0 then begin 
 	print("請輸入目前成本!!");

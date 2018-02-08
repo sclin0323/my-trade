@@ -1,7 +1,7 @@
 if barinterval <> 1 then RaiseRunTimeError("請設定頻率為1分鐘");
 variable: todayDate(0); todayDate = GetField("Date");
 variable: todayTime(0); todayTime = GetField("Time"); 
- 
+   
 // 我的成本  
 input: cost(0);	
 if cost = 0 then begin 
