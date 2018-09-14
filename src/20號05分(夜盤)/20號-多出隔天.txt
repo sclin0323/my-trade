@@ -1,0 +1,189 @@
+if barinterval <> 1 then RaiseRunTimeError("請設定頻率為1分鐘");
+variable: todayDate(0); todayDate = GetField("Date");
+variable: todayTime(0); todayTime = GetField("Time"); 
+    
+// 我的成本  
+input: cost(0);	
+if cost = 0 then begin 
+	print("請輸入目前成本!!");
+	return;
+end; 
+
+// 計算均線  
+variable: ave8(0); 		ave8 = Average(Close,8);		// 8分鐘均線
+variable: ave17(0); 	ave17 = Average(Close,17);		// 17分鐘均線
+variable: ave34(0); 	ave34 = Average(Close,34);		// 34分鐘均線
+variable: ave68(0); 	ave68 = Average(Close,68);		// 68分鐘均線
+variable: ave130(0); 	ave130 = Average(Close,130);	// 130分鐘均線
+variable: aveDir8(0);	aveDir8 = Sign(ave8 - ave8[1]);		// 8分鐘均線方向
+variable: aveDir17(0);	aveDir17 = Sign(ave17 - ave17[1]);	// 17分鐘均線方向
+variable: aveDir34(0);	aveDir34 = Sign(ave34 - ave34[1]);	// 34分鐘均線方向
+variable: aveDir68(0);	aveDir68 = Sign(ave68 - ave68[1]);	// 68分鐘均線方向
+variable: aveDir130(0);	aveDir130 = Sign(ave130 - ave130[1]);	// 130分鐘均線方向
+
+// 計算MACD
+input: FastLength(18), SlowLength(32), MACDLength(12);	// 依照XQ軟體預設值
+variable: difValue(0), macdValue(0), oscValue(0);
+MACD(weightedclose(), FastLength, SlowLength, MACDLength, difValue, macdValue, oscValue);
+variable: macdDir(0); macdDir = Sign(macdValue - macdValue[2]);		// MACD 方向
+variable: difDir(0); difDir = Sign(difValue - difValue[2]);			// DIF 方向 (向下 => -1)
+variable: macdUnder(0); macdUnder = Sign(difValue - macdValue);		// DIF 和 MACD 的上下位置
+
+// 大盤多空判斷
+value1 = GetQuote("累計委買") - GetQuote("累計委賣");   // 委買口數差(成交) 數值越大越好 => 多頭
+value2 = GetQuote("累買成筆") - GetQuote("累賣成筆");   // 成交買賣差(成交) 數值越小越好 => 多頭
+value3 = GetQuote("標的漲跌幅");
+
+print("= 多-平倉當天 ",DateToString(todayDate)," ",TimeToString(todayTime)," ",NumToStr(close, 0)," =");
+
+/////////////////////////// FOR 夜盤 ///////////////////////////
+
+// 時間: 08:45 to 10:45
+// 策略1: 早盤空頭 and 獲利不多 => 夜盤先出場
+// 1. value2 > 600 (表示有點空)
+// 2. 獲利小於15點(2分鐘)
+// 3. DIF向下(2分鐘)
+// 4. 指數低於68分線(2分鐘)
+if (todayTime >= 084500 and todayTime < 104500) then
+begin
+	condition101 = value2 > 600;
+	condition102 = (close - cost < 15) and (close[1] - cost < 15);
+	condition103 = difDir = -1 and difDir[1] = -1;
+	condition104 = close < ave68 and close[1] < ave68[1];
+	
+	print("策略10: ", condition101, condition102, condition103, condition104);
+	if condition101 and condition102 and condition103 and condition104 then
+	begin
+		ret = 1; return;
+	end;
+end;
+
+/////////////////////////// 富-短多-出當天 ///////////////////////////
+
+// 時間: 10:50 to 11:50
+// 策略1: 小點停損停利出場 (寬鬆是因為進場時有參照, 已經避開修正風險)
+// 1. 68分線連續3分鐘向下
+// 2. 指數低於68分線
+// 3. 獲利連續2分鐘低於15點
+// 4. DIF向下 
+// 5. 130線向下 or 平盤之下
+if (todayTime >= 105000 and todayTime < 115000) then
+begin
+	condition71 = aveDir68 = -1 and aveDir68[1] = -1 and aveDir68[2] = -1;
+	condition72 = close < ave68;
+	condition73 = (close - cost < 15) and (close[1] - cost < 15);
+	condition74 = difDir = -1;
+	condition75 = aveDir130 = -1 or GetQuote("當日漲幅%") < 0;
+	
+	print("策略7: ", condition71, condition72, condition73, condition74, condition75);
+	if condition71 and condition72 and condition73 and condition74 and condition75 then
+	begin
+		ret = 1; return;
+	end;
+end;
+
+
+// 時間: 10:30 to 11:05
+// 策略6: 直接停損出場
+// 1. 虧損28點停損出場
+if todayTime >= 103000 and todayTime < 110500 then
+begin
+	condition61 = cost - close > 28;
+	
+	print("策略6: ", condition61);
+	if condition61 then
+	begin
+		ret = 1; return;
+	end;
+end;
+
+// 時間: 09:30 to 10:30
+// 策略5: 停損出場
+// 1. 虧損28點停損出場
+// 2. 平盤之下
+if todayTime >= 093000 and todayTime < 103000 then
+begin
+	condition51 = cost - close > 28;
+	condition52 = GetQuote("當日漲幅%") < 0;
+	
+	print("策略5: ", condition51, condition52);
+	if condition51 and condition52 then
+	begin
+		ret = 1; return;
+	end;
+end;
+
+// 時間: 09:30 to 10:30
+// 策略4: 停損出場
+// 1. 虧損28點停損出場
+// 2. 130分均線向下
+// 3. DIF向下
+if todayTime >= 093000 and todayTime < 103000 then
+begin
+	condition41 = cost - close > 28;
+	condition42 = aveDir130 = -1;
+	condition43 = difDir = -1;
+	
+	print("策略4: ", condition41, condition42, condition43);
+	if condition41 and condition42 and condition43 then
+	begin
+		ret = 1; return;
+	end;
+end;
+
+// 時間: 12:45 to 13:44 
+// 策略3: 收盤前中線趨勢逆勢出場
+// 1. 過去25分鐘內有8分鐘 130分鐘均線趨勢向下
+// 2. 指數低於130分均線
+// 3. 130分鐘均線趨勢向下 and DIF向下
+// 4. 獲利小於35點
+if todayTime >= 124500 and todayTime < 134400 then
+begin
+	condition31 = Summation(aveDir130,25) < 9;
+	condition32 = close < ave130;
+	condition33 = aveDir130 = -1 and difDir = -1;
+	condition34 = close - cost < 35;
+	
+	print("策略3: ", condition31, condition32, condition33, condition34);
+	if condition31 and condition32 and condition33 and condition34 then
+	begin
+		ret = 1; return;
+	end;
+end;
+
+// 時間: 12:30 to 13:44 
+// 策略2: 午盤之後獲利只有 4-15 點出場
+// 1. 獲利小於15 and 獲利大於3
+if todayTime >= 124500 and todayTime < 134400 then
+begin
+	condition21 = close - cost < 15 and close - cost > 3;
+	
+	print("策略2: ", condition21);
+	if condition21 then
+	begin
+		ret = 1; return;
+	end;
+end;
+
+// 時間: 11:50 to 13:45
+// 策略1: 小點停損停利出場
+// 1. 68分線連續3分鐘向下
+// 2. 指數低於68分線
+// 3. 獲利連續2分鐘低於15點
+// 4. DIF向下 
+if (todayTime >= 115000 and todayTime < 134500) then
+begin
+	condition11 = aveDir68 = -1 and aveDir68[1] = -1 and aveDir68[2] = -1;
+	condition12 = close < ave68;
+	condition13 = (close - cost < 15) and (close[1] - cost < 15);
+	condition14 = difDir = -1;
+	
+	print("策略1: ", condition11, condition12, condition13, condition14);
+	if condition11 and condition12 and condition13 and condition14 then
+	begin
+		ret = 1; return;
+	end;
+end;
+
+
+

@@ -1,0 +1,191 @@
+if barinterval <> 15 then RaiseRunTimeError("請設定頻率為15分鐘");
+variable: todayDate(0); todayDate = GetField("Date");
+variable: todayTime(0); todayTime = GetField("Time");  
+
+// 計算均線 
+variable: ave9(0); 		ave9 = Average(Close,9);			// 2小時K
+variable: ave27(0); 	ave27 = Average(Close,27);			// 7小時K
+variable: ave72(0); 	ave72 = Average(Close,72);			// 18小時K
+variable: ave400(0); 	ave400 = Average(Close,400);		// 月線
+variable: ave1200(0); 	ave1200 = Average(Close,1200);		// 季線
+variable: aveDir9(0);	aveDir9 = Sign(ave9 - ave9[1]);			// 2小時均線方向
+variable: aveDir27(0);	aveDir27 = Sign(ave27 - ave27[1]);		// 7小時均線方向
+variable: aveDir72(0);	aveDir72 = Sign(ave72 - ave72[1]);		// 18小時均線方向
+variable: aveDir400(0);	aveDir400 = Sign(ave400 - ave400[1]);	// 月線方向
+variable: aveDir1200(0);aveDir1200 = Sign(ave1200 - ave1200[1]);// 季線方向
+
+// 計算MACD
+input: FastLength(15), SlowLength(19), MACDLength(10);	// 依照XQ軟體預設值
+variable: difValue(0), macdValue(0), oscValue(0);
+MACD(weightedclose(), FastLength, SlowLength, MACDLength, difValue, macdValue, oscValue);
+variable: macdDir(0); macdDir = Sign(macdValue - macdValue[2]);		// MACD 方向
+variable: difDir(0); difDir = Sign(difValue - difValue[2]);			// DIF 方向 (向下 => -1)
+variable: macdUnder(0); macdUnder = Sign(difValue - macdValue);		// DIF 和 MACD 的上下位置
+
+// 盤中資訊
+print("==============================================================");
+print("成交買賣差:",value2);
+print("標的漲跌幅:",value3);
+print("72均方向:",aveDir72);
+print("DIF方向:",difDir);
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
+// 策略8: 月線向下, 高檔翻空
+// 1. 9 27 400(5) 向下
+// 2. 過去9k 下跌超過30點
+// 3. 均線糾跌 9 27 72 指數 差距25點內
+// 4. 指數最低 9 27 72
+// 5. DIF向下 and DIF介於-0.3to-3.3
+if todayTime >= 090000 and todayTime < 134500 then
+begin
+	condition81 = aveDir9 = -1 and aveDir27 = -1 and aveDir400 = -1 and aveDir400[3] = -1 and aveDir400[6] = -1 and aveDir400[9] = -1;
+	condition82 = highest(high, 9) - close > 30;
+	condition83 = MaxList(ave9, ave27, ave72, close) - MinList(ave9, ave27, ave72, close) < 25;
+	condition84 = close < ave9 and close < ave27 and close < ave72; 
+	condition85 = difDir = -1 and (difValue < -0.3 and difValue > -3.3);
+	print("4號-空-策略8:",DateToString(todayDate),TimeToString(todayTime), condition81, condition82, condition83, condition84, condition85);
+	if condition81 and condition82 and condition83 and condition84 and condition85 then
+	begin
+		ret = 1;
+	end;
+end;
+
+// 策略7: 漲多月線乖離過大回檔空
+// 1. 9 27 72 向下 
+// 2. 過去72分鐘下跌超過60點
+// 3. 指數離月線超過60點(高檔空)
+// 4. DIF向下 and DIF介於-0.5to-3.5
+// 5. 均線糾跌(最高最低25點內)
+if todayTime >= 090000 and todayTime < 134500 then
+begin
+	condition71 = aveDir9 = -1 and aveDir27 = -1 and aveDir72 = -1;
+	condition72 = highest(high, 72) - close > 60;
+	condition73 = close - ave400 > 60;
+	condition74 = difDir = -1 and (difValue < -0.5 and difValue > -3.5);
+	condition75 = MaxList(ave9, ave27, ave72) - MinList(ave9, ave27, ave72) < 30;
+	print("4號-空-策略7:",DateToString(todayDate),TimeToString(todayTime), condition71, condition72, condition73, condition74, condition75);
+	if condition71 and condition72 and condition73 and condition74 and condition75 then
+	begin
+		ret = 1;
+	end;
+end;
+
+// 策略6: 漲多月線乖離過大回檔空
+// 1. 9 27向下 指數3線之下
+// 2. 月線乖離超過130點
+// 3. 指數過去17K跌幅超過60點
+// 4. DIF向下 and DIF介於-1to-4
+// 5. 均線糾跌(最高最低30點內)
+if todayTime >= 090000 and todayTime < 134500 then
+begin
+	condition61 = aveDir9 = -1 and aveDir27 = -1 and close < ave9 and close < ave27 and close < ave72;
+	condition62 = close - ave400 > 130;
+	condition63 = highest(high, 17) - close > 60;
+	condition64 = difDir = -1 and (difValue < -1 and difValue > -4);
+	condition65 = MaxList(ave9, ave27, ave72) - MinList(ave9, ave27, ave72) < 30;
+	print("4號-空-策略6:",DateToString(todayDate),TimeToString(todayTime), condition51, condition52, condition53, condition54, condition55);
+	if condition51 and condition52 and condition53 and condition54 and condition55 then
+	begin
+		ret = 1;
+	end;
+end;
+
+// 策略五: 弱勢就是空
+// 1. 連續2K全線向下 
+// 2. 指數2K是4線最低
+// 3. 過去13K要跌超過90點
+// 4. DIF向下 and 小於-0.5
+// 5. 均線糾跌(最高最低25點內)
+if todayTime >= 090000 and todayTime < 134500 then
+begin
+	condition51 = aveDir9 = -1 and aveDir27 = -1 and aveDir72 = -1 and aveDir400 = -1 and aveDir9[1] = -1 and aveDir27[1] = -1 and aveDir72[1] = -1 and aveDir400[1] = -1;
+	condition52 = close < MinList(ave9, ave27, ave72, ave400) and close < MinList(ave9[1], ave27[1], ave72[1], ave400[1]);
+	condition53 = highest(high, 13) - close > 90;
+	condition54 = difDir = -1 and (difValue < -0.5 and difValue > -3.5);
+	condition55 = MaxList(ave9, ave27, ave72, ave400) - MinList(ave9, ave27, ave72, ave400) < 25;
+	print("4號-空-策略5:",DateToString(todayDate),TimeToString(todayTime), condition51, condition52, condition53, condition54, condition55);
+	if condition51 and condition52 and condition53 and condition54 and condition55 then
+	begin
+		ret = 1;
+	end;
+end;
+
+// 策略四: 月線向下出線黑三兵 and 跌破72K (2018-03-28)
+// 1. 連續3K黑K 
+// 2. 指數3K內出線跌破72分線
+// 3. 過去6K要跌超過40點
+// 4. 9 27 和 月線要向下 同時指數也要低於9和27
+// 5. DIF向下 and 小於0
+if todayTime >= 090000 and todayTime < 134500 then
+begin
+	condition41 = open < close and open[1] < close[1] and (open[2] < close[2] or open[3] < close[3]);
+	condition42 = close < ave72 and (close[1] > ave72[1] or close[2] > ave72[2] or close[3] > ave72[3]);
+	condition43 = highest(high, 6) - close > 40;
+	condition44 = aveDir9 = -1 and aveDir27 = -1 and aveDir400 = -1 and close < ave9 and close < ave27;
+	condition45 = difDir = -1 and (difValue < 0 and difValue > -3);
+	print("4號-空-策略4:",DateToString(todayDate),TimeToString(todayTime), condition41, condition42, condition43, condition44, condition45);
+	if condition41 and condition42 and condition43 and condition44 and condition45 then
+	begin
+		ret = 1;
+	end;
+end;
+
+
+// 策略三: 突然急跌翻空
+// 1. 9 27 72 400 全走空
+// 2. 均線糾跌(最高最低15點內)
+// 3. 指數跌幅超過40點
+// 4. DIF向下 and 小於0.5 
+if todayTime >= 090000 and todayTime < 134500 then
+begin
+	condition31 = aveDir9 = -1 and aveDir27 = -1 and aveDir72 = -1 and aveDir400 = -1;
+	condition32 = MaxList(ave9, ave27, ave72, ave400) - MinList(ave9, ave27, ave72, ave400) < 15;
+	condition33 = high - close > 40;
+	condition34 = difDir = -1 and (difValue < 0.5 and difValue > -2.5);
+	print("4號-空-策略3:",DateToString(todayDate),TimeToString(todayTime), condition31, condition32, condition33, condition34);
+	if condition31 and condition32 and condition33 and condition34 then
+	begin
+		ret = 1;
+	end;
+end;
+
+// 策略二: 逆勢過高走空
+// 1. 9 27 向下; 72 400 向上或下都可;(逆勢空)
+// 2. 9(10/13) 27(7/9)分線連續向下
+// 3. 指數低於9 27連續2K, and (ave9 < ave27)
+// 4. (DIF向下 and DIF小於0) and 過去27K內DIF有高過8以上
+// 5. 過去27K指數下跌超過38點
+if todayTime >= 090000 and todayTime < 134500 then
+begin
+	condition21 = aveDir9 = -1 and aveDir27 = -1;
+	condition22 = (Summation(aveDir9,13) = -7 or Summation(aveDir9,13) < -7) and (Summation(aveDir27,9) = -5 or Summation(aveDir27,9) < -5);
+	condition23 = (close < ave9 and close[1] < ave9[1] and close < ave27 and close[1] < ave27) and (ave9 < ave27);
+	condition24 = (difDir = -1 and (difValue < 0 and difValue > -3)) and highest(difValue, 27) > 8;
+	condition25 = highest(high, 27) - close > 38;
+	print("4號-空-策略2:",DateToString(todayDate),TimeToString(todayTime), condition21, condition22, condition23, condition24, condition25);
+	if condition21 and condition22 and condition23 and condition24 and condition25 then
+	begin
+		ret = 1;
+	end;
+end;
+
+// 策略一
+// 1. 4線向下(9 27 72 400)
+// 2. 4線空頭排列
+// 3. DIF向下(2/3) and 小於0.3
+// 4. 9K和72K之間小於30點
+// 5. 與月線乖離要小於144
+if todayTime >= 090000 and todayTime < 134500 then
+begin
+	condition11 = aveDir9 = -1 and aveDir27 = -1 and aveDir72 = -1 and aveDir400 = -1;
+	condition12 = ave9 < ave27 and ave27 < ave72 and ave72 < ave400;
+	condition13 = (difDir = -1 and (difDir[1] = -1 or difDir[2] = -1)) and (difValue < 0.5 and difValue > -2.5);
+	condition14 = ave72 - ave9 < 30;
+	condition15 = ave400 - close < 144;
+	print("4號-空-策略1:",DateToString(todayDate),TimeToString(todayTime), condition11, condition12, condition13, condition14, condition15);
+	if condition11 and condition12 and condition13 and condition14 and condition15 then
+	begin
+		ret = 1;
+	end;
+end;
