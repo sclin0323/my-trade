@@ -1,0 +1,557 @@
+if barinterval <> 1 then RaiseRunTimeError("請設定頻率為1分鐘");
+variable: todayDate(0); todayDate = GetField("Date");
+variable: todayTime(0); todayTime = GetField("Time");  
+
+// 計算均線     
+variable: ave8(0);      ave8 = Average(Close,8);    // 8分鐘均線
+variable: ave17(0);     ave17 = Average(Close,17);  // 17分鐘均線
+variable: ave34(0);     ave34 = Average(Close,34);  // 34分鐘均線
+variable: ave68(0);     ave68 = Average(Close,68);  // 68分鐘均線
+variable: ave130(0);    ave130 = Average(Close,130);    		// 130分鐘均線
+variable: aveDir8(0);   aveDir8 = Sign(ave8 - ave8[1]);     	// 8分鐘均線方向
+variable: aveDir17(0);  aveDir17 = Sign(ave17 - ave17[1]);  	// 17分鐘均線方向
+variable: aveDir34(0);  aveDir34 = Sign(ave34 - ave34[1]);  	// 34分鐘均線方向
+variable: aveDir68(0);  aveDir68 = Sign(ave68 - ave68[1]);  	// 68分鐘均線方向
+variable: aveDir130(0); aveDir130 = Sign(ave130 - ave130[1]);   // 130分鐘均線方向
+  
+// 計算MACD
+input: FastLength(18), SlowLength(32), MACDLength(12);	// 依照XQ軟體預設值
+variable: difValue(0), macdValue(0), oscValue(0);
+MACD(weightedclose(), FastLength, SlowLength, MACDLength, difValue, macdValue, oscValue);
+variable: macdDir(0); macdDir = Sign(macdValue - macdValue[2]);     // MACD 方向
+variable: difDir(0); difDir = Sign(difValue - difValue[2]);         // DIF 方向 (向下 => -1)
+variable: macdUnder(0); macdUnder = Sign(difValue - macdValue);     // DIF 和 MACD 的上下位置
+
+// 1. 累計委差-散戶多空 (小於0 => 散戶作多 => 有利空頭)
+// 2. 成交筆差-多空力道 (小於-1500 => 偏空)
+// 3. 散戶多空30分鐘平均
+// 4. 散戶多空60分鐘平均
+// 5. 多空力道30分鐘平均
+// 6. 多空力道60分鐘平均
+value1 = GetQuote("累委賣筆") - GetQuote("累委買筆");
+value2 = GetQuote("累賣成筆") - GetQuote("累買成筆");
+value3 = average(value1, 30);
+value4 = average(value1, 60);
+value5 = average(value2, 30);
+value6 = average(value2, 60);
+
+print("===============================================================");
+print("時間",DateToString(todayDate),TimeToString(todayTime),"指數:",NumToStr(close, 0),"散戶方向:",NumToStr(value1, 0),"多空力道:",NumToStr(value2, 0));
+print("散戶30分平均:",value3,"散戶60分平均:",value4);
+print("多空30分平均:",value5,"多空60分平均:",value6);
+
+////////// 交易格局 //////////
+// 1. 30號空參: 60分 台股指數近月
+
+// 2. 滿足以下條件之一 => 執行策略
+// 2.1. 130分鐘線向下
+// 2.2. 指數低於130分鐘線5分鐘
+// 2.3. 多空力道 連續3分鐘 < -1000
+condition1 = aveDir130 = -1;
+condition2 = close < ave130 and close[1] < ave130[1] and close[2] < ave130[2] and close[3] < ave130[3] and close[4] < ave130[4];
+condition3 = value2 < -1000 and value2[1] < -1000 and value2[2] < -1000;
+if not(condition1 or condition2 or condition3) then
+begin
+    print("所有條件都不滿足 => 不執行策略");
+    return;
+end;
+
+////////// 順勢交易 //////////
+
+// 時間: 09:00 to 09:20
+// 出手時機: 開盤瞬間跳空反轉走低
+// 1. 多空力道 < -1200 and 10分鐘內增加600
+// 2. 散戶空
+// 3. 均線都向下
+// 4. DIF 向下 and 為負
+// 5. 指數離68分線45點之內 and 指數低於17分線下
+// 6. 180分鐘內大跌超過60點
+if todayTime >= 090000 and todayTime < 092000 then
+begin
+    condition221 = highest(value2, 15) - value2 > 600 and value2 < -1200;
+    condition222 = value1 < 0;
+    condition223 = aveDir68 = -1 and aveDir34 = -1 and aveDir17 = -1;
+    condition224 = difDir = -1 and difValue < 0;
+    condition225 = (ave68 - close < 45) and (close < ave17);
+	condition226 = Highest(close, 180) - close > 60;
+ 
+    print("空-策略22: ", condition221, condition222, condition223, condition224, condition225, condition226);
+    if condition221 and condition222 and condition223 and condition224 and condition225 and condition226 then
+    begin
+        ret = 1; return;
+    end;
+end;
+
+// 時間: 09:00 to 09:05
+// 出手時機: 空頭開盤直接空
+// 1. 多空力道 < -1500 and 多空力道15分鐘減少100 and 散戶空
+// 2. 過去15分鐘跌幅超過10點
+// 3. 跌幅超過0.3% 小於0.6
+// 4. difDir 向下 and difValue < 0
+if todayTime >= 090000 and todayTime < 090500 then
+begin
+	condition211 = highest(value2, 15) - value2 > 100 and value2 < -1500 and value1 < 0;
+	condition212 = highest(high,15) - close > 10;
+	condition213 = GetQuote("當日漲幅%") < -0.3 and GetQuote("當日漲幅%") > -0.65;
+	condition214 = difDir = -1 and difValue < 0;
+	print("策略21: ", condition211, condition212, condition213, condition214);
+	if condition211 and condition212 and condition213 and condition214 then
+	begin
+		ret = 1; return;
+	end;
+end;
+
+// 時間: 09:15 to 10:15
+// 出手時機: 高檔破線急空(多轉空, 只有3分鐘機會)
+// 1. 多空力道 < 600 and 多空力道15分鐘減少500 and 散戶空
+// 2. 過去90分鐘指數都大於130分線 
+// 3. 過去90分鐘130分線方向都向上
+// 4. 過去45分內跌下跌超過25點
+// 5. 指數跌破130分線 (只有3分鐘出手機會) 
+// 6. 創下近30分鐘最低
+// 7. 指數離130分線25點之內
+if todayTime >= 090000 and todayTime < 101500 then
+begin
+	condition201 = highest(value2, 15) - value2 > 500 and value2 < 600 and value1 < 0;
+	condition202 = close[10] > ave130[10] and close[20] > ave130[20] and close[30] > ave130[30] and close[40] > ave130[40] and close[50] > ave130[50] and close[60] > ave130[60] and close[70] > ave130[70] and close[80] > ave130[80] and close[90] > ave130[90];
+	condition203 = aveDir130[10] = 1 and aveDir130[20] = 1 and aveDir130[30] = 1 and aveDir130[40] = 1 and aveDir130[50] = 1 and aveDir130[60] = 1 and aveDir130[70] = 1 and aveDir130[80] = 1 and aveDir130[90] = 1;
+	condition204 = highest(high, 45) - close > 25;
+	condition205 = (close < ave130 and close[3] > ave130[3]);
+	condition206 = close < minlist(close[1],close[5],close[10],close[15],close[20],close[25],close[30]);
+	condition207 = ave130 - close < 25;
+	print("策略20: ", condition201, condition202, condition203, condition204, condition205, condition206, condition207);
+	if condition201 and condition202 and condition203 and condition204 and condition205 and condition206 and condition207 then
+	begin
+		ret = 1; return;
+	end;
+end;
+
+// 時間: 09:15 to 10:15
+// 出手時機: 多頭反轉空後, 震盪反彈無力空
+// 1. 多空力道 < -1200 and 多空力道15分鐘減少500
+// 2. 130分線向下(連續超過40分鐘)
+// 3. 68分線向下(連續超過40分鐘)
+// 4. 130分線60分鐘前為多頭(多頭反轉空)
+// 5. DIF連2分鐘向下 and 過去60分鐘內有跌超過-7(跌深反彈)
+// 6. 指數離130分線25點之內(表示有反彈)
+if todayTime >= 091500 and todayTime < 101500 then
+begin
+	condition191 = highest(value2, 10) - value2 > 500 and value2 < -1200;
+	condition192 = aveDir130 = -1 and aveDir130[2] = -1 and aveDir130[3] = -1 and aveDir130[10] = -1 and aveDir130[20] = -1 and aveDir130[30] = -1 and aveDir130[40] = -1;
+	condition193 = aveDir68 = -1 and aveDir68[2] = -1 and aveDir68[3] = -1 and aveDir68[10] = -1 and aveDir68[20] = -1 and aveDir68[30] = -1 and aveDir68[40] = -1;
+	condition194 = aveDir130[60] = 1 and aveDir130[65] = 1 and aveDir130[70] = 1;
+	condition195 = difDir = -1 and difDir[1] = -1;
+	condition196 = ave130 - close < 25;
+	print("策略19: ", condition191, condition192, condition193, condition194, condition195, condition196);
+	if condition191 and condition192 and condition193 and condition194 and condition195 and condition196 then
+	begin
+		ret = 1; return;
+	end;
+end;
+
+// 時間: 09:00 to 09:20
+// 出手時機: 開盤瞬間跳空反轉走低
+// 1. 多空力道 < -1200 and 多空力道10分鐘減少500
+// 2. 散戶空
+// 3. 均線都向下
+// 4. DIF 向下 and 為負
+// 5. 指數離68分線40點之內 and 指數低於17分線下
+// 6. 180分鐘內大跌超過60點
+if todayTime >= 090000 and todayTime < 092000 then
+begin
+    condition181 = highest(value2, 10) - value2 > 500 and value2 < -1200;
+    condition182 = value1 < 0;
+    condition183 = aveDir68 = -1 and aveDir34 = -1 and aveDir17 = -1;
+    condition184 = difDir = -1 and difValue < 0;
+    condition185 = (ave68 - close < 40) and (close < ave17);
+	condition186 = Highest(close, 180) - close > 60;
+    print("策略18: ", condition181, condition182, condition183, condition184, condition185, condition186);
+    if condition181 and condition182 and condition183 and condition184 and condition185 and condition186 then
+    begin
+        ret = 1; return;
+    end;
+end;
+
+// 時間: 09:00 to 09:45
+// 開低震盪無力上漲繼續走低
+// 1. 多空力道 < -2000 and 多空力道15分鐘減少700
+// 2. 散戶空
+// 3. 17 34 68分線向下
+// 4. (DIF為負值 and DIF向下) or (DIF為正值 and DIF向下 nad 處於死亡交叉)
+// 5. 離34分線不能超過15點 and 價格要在34下
+if todayTime >= 090000 and todayTime < 094500 then
+begin
+	condition171 = highest(value2, 15) - value2 > 700 and value2 < -2000;
+	condition172 = value1 < 0;
+    condition173 = (aveDir17 = -1 and aveDir34 = -1 and aveDir68 = -1);
+    condition174 = (difValue < 0 and difDir = -1) or (difValue > 0 and difDir = -1 and macdUnder = -1);
+    condition175 = (close + 15) > ave34 and (close < ave34);
+    print("策略17: ", condition171, condition172, condition173, condition174, condition175);
+    if condition171 and condition172 and condition173 and condition174 and condition175 then
+    begin
+        ret = 1; return;
+    end;
+end;
+
+// 時間: 09:00 to 09:45
+// 開低震盪無力上漲繼續走低
+// 1. 多空力道 < -2000 and 多空力道15分鐘減少500
+// 2. 散戶空
+// 3. dif 向下(高檔)
+// 4. 4線向下
+// 5. 68分 > 34分 > 17分
+// 6. 68和17分差距18點之內 and 指數離68分線30點內
+if todayTime >= 090000 and todayTime < 094500 then
+begin
+	condition161 = highest(value2, 15) - value2 > 500 and value2 < -2000;
+	condition162 = value1 < 0;
+    condition163 = difDir = -1;
+    condition164 = (aveDir8 = -1 and aveDir17 = -1 and aveDir34 = -1 and aveDir68 = -1);
+    condition165 = (ave68 > ave34) and (ave34 > ave17);
+    condition166 = AbsValue(ave68 - ave17) < 18 and AbsValue(ave68 - close) < 30;
+	print("策略16: ", condition161, condition162, condition163, condition164, condition165, condition166);
+    if condition161 and condition162 and condition163 and condition164 and condition165 and condition166 then
+    begin
+        ret = 1; return;
+    end;
+end;
+
+// 時間: 09:00 to 09:20
+// 前1天大跌, 隔天開盤無力再續跌
+// 1. 270分鐘內大跌超過110點
+// 2. 多空力道 < -1000
+// 3. 4均線都向下
+// 4. DIF 小於 0 and 向下
+// 5. 指數離68均線35點之內 and 指數在17分線下
+if todayTime >= 090000 and todayTime < 092000 then
+begin
+	condition151 = Highest(close, 270) - close > 110;
+	condition152 = value2 < -1000;
+	condition153 = aveDir17 = -1 and aveDir34 = -1 and aveDir68 = -1;
+	condition154 = difDir = -1 and difValue < 0;
+	condition155 = ave68 - close < 35 and close < ave17;
+	
+	print("策略15: ", condition151, condition152, condition153, condition154, condition155);
+    if condition151 and condition152 and condition153 and condition154 and condition155 then
+    begin
+        ret = 1; return;
+    end;
+end;
+ 
+// 時間: 09:05 to 09:45
+// 出手時機 開盤逐漸走空
+// 1. 散戶空
+// 2. 多空力道 < -1500 and 多空力道10分鐘減少500
+// 3. 均線都向下
+// 4. DIF 向下 and 為負
+// 5. 指數離68分線30點之內 and 指數低於17分線下
+// 6. 180分鐘內大跌超過60點
+if todayTime >= 090500 and todayTime < 094500 then
+begin
+    condition141 = value1 < 0;
+    condition142 = highest(value2, 10) - value2 > 500 and value2 < -1500;
+    condition143 = aveDir68 = -1 and aveDir34 = -1 and aveDir17 = -1;
+    condition144 = difDir = -1 and difValue < 0;
+    condition145 = (ave68 - close < 30) and (close < ave17);
+	condition146 = Highest(close, 180) - close > 60;
+    print("策略14: ", condition141, condition142, condition143, condition144, condition145, condition146);
+    if condition141 and condition142 and condition143 and condition144 and condition145 and condition146 then
+    begin
+        ret = 1; return;
+    end;
+end;
+ 
+// 時間: 09:10 to 10:15
+// 出手時機: 破130分鐘線 逐漸走空
+// 1. 多空力道 < -1200 and 多空力道10分鐘減少500
+// 2. 散戶空
+// 3. 均線都向下
+// 4. DIF 向下 and 為負
+// 5. 指數離68分線35點之內 and 指數低於17分線下
+// 6. 180分鐘內大跌超過60點
+if todayTime >= 091000 and todayTime < 101500 then
+begin
+    condition131 = highest(value2, 10) - value2 > 500 and value2 < -1200;
+    condition132 = value1 < 0;
+    condition133 = aveDir68 = -1 and aveDir34 = -1 and aveDir17 = -1;
+    condition134 = difDir = -1 and difValue < 0;
+    condition135 = (ave68 - close < 35) and (close < ave17);
+	condition136 = Highest(close, 180) - close > 60;
+    print("策略13: ", condition131, condition132, condition133, condition134, condition135, condition136);
+    if condition131 and condition132 and condition133 and condition134 and condition135 and condition136 then
+    begin
+        ret = 1; return;
+    end;
+end;
+ 
+ 
+// 時間: 09:10 to 10:15
+// 出手時機: 關鍵13分急跌破均線
+// 1. 散戶空
+// 2. 多空力道 < -1500 and 多空力道15分鐘減少1000
+// 3. 四線向下 and DIF向下 and 指數跌破68分線
+// 4. 13分鐘前指數還在17分線上
+// 5. 13分鐘前四線向上
+// 6. 13分鐘前四線多頭排列
+if todayTime >= 091000 and todayTime < 101500 then
+begin
+    condition121 = value1 < 0;    
+	condition122 = highest(value2, 15) - value2 > 1000 and value2 < -1500;
+    condition123 = aveDir68 = -1 and aveDir34 = -1 and aveDir17 = -1 and close < ave68 and difDir = -1;
+    condition124 = close[12] > ave17[12];
+    condition125 = (aveDir8[12] = 1) and (aveDir17[12] = 1) and (aveDir34[12] = 1) and (aveDir68[12] = 1);
+    condition126 = (ave17[12] > ave34[12]) and (ave34[12] > ave68[12]) and close[12] > ave8[12];
+    print("策略12: ", condition121, condition122, condition123, condition124, condition125, condition126);
+    if condition121 and condition122 and condition123 and condition124 and condition125 and condition126 then
+    begin
+        ret = 1; return;
+    end;
+end;
+   
+ 
+// 時間: 09:10 to 10:15 (建立日期: 2017-08-10)
+// 出手時機: 開盤後破68分線走空
+// 1. 散戶空
+// 2. 多空力道 < -2000 and 多空力道15分內減少1000
+// 3. 3線向下 指數低於17分線
+// 4. 指數離68分線25點內
+// 5. DIF向下
+if todayTime >= 091000 and todayTime < 101500 then
+begin
+    condition111 = value1 < 0;
+    condition112 = highest(value2, 15) - value2 > 1000 and value2 < -2000;
+    condition113 = aveDir68 = -1 and aveDir34 = -1 and aveDir17 = -1 and close < ave17;
+    condition114 = ave68 - close < 25;
+    condition115 = difDir = -1;
+    print("策略11: ", condition111, condition112, condition113, condition114, condition115);
+    if condition111 and condition112 and condition113 and condition114 and condition115 then
+    begin
+        ret = 1; return;
+    end;
+end;
+ 
+ 
+// 時間: 09:05 to 09:45 (建立日期: 2017-03-09)
+// 出手時機: 大盤開低走低
+// 1. 多空力道15分鐘大減600; 散戶空
+// 2. 多空力道 < -1000
+// 3. 四線向下 and 空頭排列
+// 4. DIF向下 and (DIF < -1 and DIF > -6)
+// 5. 指數離 68分鐘均線 35點以內
+if todayTime >= 090500 and todayTime < 094500 then
+begin
+    condition101 = highest(value2, 15) - value2 > 600 and value1 < 0;
+    condition102 = value2 < -1000;
+    condition103 = (aveDir8 = -1 and aveDir17 = -1 and aveDir34 = -1 and aveDir68 = -1) and (ave34 < ave68 and ave17 < ave34) ;
+    condition104 = difDir = -1 and (difValue < -1 and difValue > -6);
+    condition105 = AbsValue(ave68 - close) < 35;
+    print("策略10: ", condition101, condition102, condition103, condition104, condition105);
+    if condition101 and condition102 and condition103 and condition104 and condition105 then
+    begin
+        ret = 1; return;
+    end;
+end;
+   
+   
+// 時間: 0903 to 09:38
+// 出手時機: 大盤震盪緩步下跌
+// 1. 多空力道15分鐘大減500; 散戶空
+// 2. 多空力道 < -1000
+// 3. 四線向下 and 股價17線下
+// 4. DIF 連續三分鐘向下
+// 5. DIF小於 0 and 大於-3.5
+// 6. 四線均線糾結 (最高和最小差5點內)
+// 7. 指數離均線不出過12點
+if todayTime >= 090300 and todayTime < 093800 then
+begin
+    condition91 = highest(value2, 15) - value2 > 500 and value1 < 0;
+    condition92 = value2 < -1000;
+    condition93 = (aveDir8 = -1 and aveDir17 = -1 and aveDir34 = -1 and aveDir68 = -1) and (close < ave17);
+    condition94 = (difDir = -1 and difDir[1] = -1 and difDir[2] = -1);
+    condition95 = (difValue < 0 and difValue > -3.5);
+    condition96 = AbsValue(maxlist(ave8, ave17, ave34, ave68) - minlist(ave8, ave17, ave34, ave68)) < 5;
+    condition97 = AbsValue(close - minlist(ave8, ave17, ave34, ave68)) < 12;
+    print("策略09: ", condition91, condition92, condition93, condition94, condition95, condition96, condition97);
+    if condition91 and condition92 and condition93 and condition94 and condition95 and condition96 and condition97 then
+    begin
+        ret = 1; return;
+    end;
+end;
+   
+// 時間: 0903 to 09:58
+// 出手時機: 早盤均口差和委買口數差大空
+// 1. 多空力道 < -2000 (空頭力道)
+// 2. 散戶空 and 散戶空5分鐘內力道不能有增加
+// 3. dif 向下(高檔)
+// 4. 4線向下
+// 5. 68分 > 34分 > 17分
+// 6. 68和17分差距18點之內 and 指數離68分線30點內
+if todayTime >= 090300 and todayTime < 095800 then
+begin
+    condition81 = value2 < -2000;
+    condition82 = value1 < 0 and value1 <= value1[5];
+    condition83 = difDir = -1;
+    condition84 = (aveDir8 = -1 and aveDir17 = -1 and aveDir34 = -1 and aveDir68 = -1);
+    condition85 = (ave68 > ave34) and (ave34 > ave17);
+    condition86 = AbsValue(ave68 - ave17) < 18 and AbsValue(ave68 - close) < 30;
+    print("策略08: ", condition81, condition82, condition83, condition84, condition85, condition86);
+    if condition81 and condition82 and condition83 and condition84 and condition85 and condition86 then
+    begin
+        ret = 1; return;
+    end;
+end;
+    
+// 時間: 0903 to 10:15
+// 出手時機: 委買口數急空但開高盤整，盤整無力空 (參考2016-12-12)
+// 1. 多空力道15分鐘大減500; 散戶空
+// 2. macd 死亡交叉 and dif 大於-1.5且向下(高檔)
+// 3. 8 17均線向下 and 指數在8 17 34均線下
+// 4. 指數離68分線10點內 and 34分線15點內
+// 5. 多空力道 < -1000 (空頭力道)
+if todayTime >= 090300 and todayTime < 101500 then
+begin
+    condition71 = highest(value2, 15) - value2 > 500 and value1 < 0;
+    condition72 = (macdUnder = -1 and difValue > -1.5 and difDir = -1);
+    condition73 = (aveDir8 = -1 and aveDir17 = -1) and (close < ave8 and close < ave17 and close < ave34);
+    condition74 = AbsValue(ave34 - close) < 15 and AbsValue(ave68 - close) < 10;
+    condition75 = value2 < -1000;
+    
+	print("策略07: ", condition71, condition72, condition73, condition74, condition75);
+    if condition71 and condition72 and condition73 and condition74 and condition75 then
+    begin
+        ret = 1; return;
+    end;
+end;
+   
+// 時間: 0903 to 9:53
+// 出手時機: 開平盤直接逐步走空 (2016-12-05)
+// 1. 多空力道15分鐘大減700; 散戶空
+// 2. 多空力道 < -1000 (空頭力道)
+// 3. 均線四線向下 and 均線空頭排列
+// 4. 均線四線距離不大(68 和 17距離10點內)
+// 5. macd 死亡交叉 and DIF向下
+// 6. 指數在17 34 68之下 and 離34均線15點內
+if todayTime >= 090300 and todayTime < 095300 then
+begin
+    condition61 = highest(value2, 15) - value2 > 700 and value1 < 0;
+    condition62 = value2 < -1000;
+    condition63 = (aveDir8 = -1 and aveDir17 = -1 and aveDir34 = -1 and aveDir68 = -1) and (ave34 < ave68 and ave17 < ave34) ;
+    condition64 = (ave68 - ave17 < 7);
+    condition65 = (macdUnder = -1 and difDir = -1);
+    condition66 = (close < ave68 and close < ave34 and close < ave17) and (ave34 - close < 15); 
+    print("策略06: ", condition61, condition62, condition63, condition64, condition65, condition66);
+    if condition61 and condition62 and condition63 and condition64 and condition65 and condition66 then
+    begin
+        ret = 1; return;
+    end;
+end;
+   
+// 時間: 0903 to 9:53
+// 出手時機: 開盤小高逐步走空 (參考2016-12-07)
+// 1. 多空力道 < -1000 (賣壓大) and 散戶空
+// 2. macd 死亡交叉 and dif 大於-0.5且向下(高檔)
+// 3. 8 17 均線向下 and 指數在8 17均線下
+// 4. 指數在 34 68均線之上 (高檔)
+// 5. ave8 和 ave68 距離在15點之內
+if todayTime >= 090300 and todayTime < 095300 then
+begin
+    condition51 = value2 < -1000 and value1 < 0;
+    condition52 = (macdUnder = -1 and difValue > -0.5 and difDir = -1);
+    condition53 = aveDir8 = -1 and aveDir17 = -1 and close < ave8 and close < ave17;
+    condition54 = close > ave68;
+    condition55 = ave8 - ave68 < 15;
+    print("策略05: ", condition51, condition52, condition53, condition54, condition55);
+    if condition51 and condition52 and condition53 and condition54 and condition55 then
+    begin
+        ret = 1; return;
+    end;
+end; 
+   
+// 時間: 0903 to 9:33
+// 出手時機: 開盤小高逐步走空 (參考2016-11-09)
+// 1. 多空力道15分鐘大減600; 散戶空
+// 2. 8 17 向下 68 向上
+// 3. macd 死亡交叉 and dif 大於0(高檔)
+// 4. 指數在 17分和34分之間 or 在34分下且離34分5點內
+// 5. 17分和34分距離15點內
+// 6. 多空力道 < -1000
+if todayTime >= 090300 and todayTime < 093300 then
+begin
+    condition41 = highest(value2, 15) - value2 > 600 and value1 < 0;
+    condition42 = (aveDir8 = -1 and aveDir17 = -1 and aveDir68 = 1);
+    condition43 = (macdUnder = -1 and difValue > 0);
+    condition44 = (close > ave34 and close < ave17) or (close < ave34 and ave34 - close < 5);
+    condition45 = (ave17 - ave34) < 15;
+    condition46 = value2 < -1000;
+    print("策略04: ", condition41, condition42, condition43, condition44, condition45, condition46);
+    if condition41 and condition42 and condition43 and condition44 and condition45 and condition46 then
+    begin
+        ret = 1; return;
+    end;
+end;
+   
+// 時間: 9:35 to 10:25
+// 出手時機: 盤中弱勢再空
+// 1. 多空力道 < -1500
+// 2. 散戶空 and 散戶空5分鐘內力道不能有增加
+// 3. 17 34 68分線向下
+// 4. (DIF為負值 and DIF向下) or (DIF為正值 and DIF向下 nad 處於死亡交叉)
+// 5. 離34分線不能超過10點 and 價格要在34下
+if todayTime >= 093500 and todayTime < 102500 then
+begin
+    condition31 = value2 < -1500;
+    condition32 = value1 < 0 and value1 <= value1[5];
+    condition33 = (aveDir17 = -1 and aveDir34 = -1 and aveDir68 = -1);
+    condition34 = (difValue < 0 and difDir = -1) or (difValue > 0 and difDir = -1 and macdUnder = -1);
+    condition35 = (close + 10) > ave34 and (close < ave34);
+    print("策略03: ", condition31, condition32, condition33, condition34, condition35);
+    if condition31 and condition32 and condition33 and condition34 and condition35 then
+    begin
+        ret = 1; return;
+    end;
+end;
+   
+// 時間: 9:05 to 9:45
+// 出手時機: 開盤弱勢空
+// 1. 多空力道 < -1500
+// 2. 散戶空 and 散戶空5分鐘內力道不能有增加
+// 3. 17 34 68分線向下
+// 4. (DIF為負值 and DIF向下) or (DIF為正值 and DIF向下 nad 處於死亡交叉)
+// 5. 離34分線不能超過15點 and 價格要在34下
+if todayTime >= 090500 and todayTime < 094500 then
+begin
+    condition21 = value2 < -1500;
+    condition22 = value1 < 0 and value1 <= value1[5];
+    condition23 = (aveDir17 = -1 and aveDir34 = -1 and aveDir68 = -1);
+    condition24 = (difValue < 0 and difDir = -1) or (difValue > 0 and difDir = -1 and macdUnder = -1);
+    condition25 = (close + 15) > ave34 and (close < ave34);
+    print("策略02: ", condition21, condition22, condition23, condition24, condition25);
+    if condition21 and condition22 and condition23 and condition24 and condition25 then
+    begin
+        ret = 1; return;
+    end;
+end;
+   
+// 時間: 0910 to 10:20
+// 出手時機: 上漲無力空
+// 1. 多空力道15分鐘大減500; 散戶空
+// 2. 8 17 34 向下 68 向上
+// 3. macd 死亡交叉 and dif 大於-5(高檔)
+// 4. 34分線由多轉空(在10分鐘內出現)
+// 5. 指數在 8 17 34 分下 and 離34分線距離15點內
+// 6. 多空力道 < -1300
+if todayTime >= 091000 and todayTime < 102000 then
+begin
+    condition11 = highest(value2, 15) - value2 > 500 and value1 < 0;
+    condition12 = (aveDir8 = -1 and aveDir17 = -1 and aveDir34 = -1 and aveDir68 = 1);
+    condition13 = (macdUnder = -1 and difValue > -5);
+    condition14 = aveDir34 = -1 and (aveDir34[1] = 1 or aveDir34[2] = 1 or aveDir34[3] = 1 or aveDir34[4] = 1 or aveDir34[5] = 1 or aveDir34[6] = 1 or aveDir34[7] = 1 or aveDir34[8] = 1 or aveDir34[9] = 1);
+    condition15 = close < ave8 and close < ave17 and close < ave34 and (close + 15) > ave34;
+    condition16 = value2 < -1300;
+    print("策略01: ", condition11, condition12, condition13, condition14, condition15, condition16);
+    if condition11 and condition12 and condition13 and condition14 and condition15 and condition16 then
+    begin
+        ret = 1; return;
+    end;
+end;
+
