@@ -44,9 +44,9 @@ condition13 = difDir < 5;
 
 if condition11 or condition12 or condition13 then
 begin
-	print(DateToString(todayDate), TimeToString(todayTime),"參照條件符合:",condition11, condition12, condition13);
+	print(DateToString(todayDate), TimeToString(todayTime),"可做多",condition11, condition12, condition13);
 	ret = 1;
 	return;
 end;
 
-print(DateToString(todayDate), TimeToString(todayTime), "參照條件不符合",condition11, condition12, condition13);
+print(DateToString(todayDate), TimeToString(todayTime), "多頭條件不符合 => 不做多",condition11, condition12, condition13);

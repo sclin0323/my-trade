@@ -26,8 +26,8 @@ variable: macdUnder(0); macdUnder = Sign(difValue - macdValue);     // DIF 和 MA
 // 大盤多空判斷
 value1 = GetQuote("累計委買") - GetQuote("累計委賣");   // 委買口數差(成交) 數值越小賣壓越大
 value2 = GetQuote("累買成筆") - GetQuote("累賣成筆");   // 成交買賣差(成交) 數值越大賣壓越大
-value3 = GetQuote("標的漲跌幅");
-print("= 空 ",DateToString(todayDate),TimeToString(todayTime),"|","指數:",NumToStr(close, 0),"DIF值:",NumToStr(difValue,1),"DIF方向:",NumToStr(difDir,0),"|",NumToStr(value1, 0),NumToStr(value2, 0)," =");
+value3 = GetQuote("當日漲幅%");
+print("= 空 ",DateToString(todayDate),TimeToString(todayTime),"|","指數:",NumToStr(close, 0),"DIF值:",NumToStr(difValue,1),"DIF方向:",NumToStr(difDir,0),"|",NumToStr(value1, 2),NumToStr(value2, 0),value3," =");
    
    
 // 策略執行條件-1 (滿足以下條件之一 => 執行策略)
@@ -62,7 +62,7 @@ begin
     condition225 = (ave68 - close < 45) and (close < ave17);
 	condition226 = Highest(close, 180) - close > 60;
  
-    print("空-策略22: ", condition221, condition222, condition223, condition224, condition225, condition226);
+    print("策略22: ", condition221, condition222, condition223, condition224, condition225, condition226);
     if condition221 and condition222 and condition223 and condition224 and condition225 and condition226 then
     begin
         ret = 1; return;
@@ -82,7 +82,7 @@ begin
 	condition213 = value3 < -0.3 and value3 > -0.65;
 	condition214 = difDir = -1 and difValue < 0;
 	
-	print("空-策略21: ", condition211, condition212, condition213, condition214);
+	print("策略21: ", condition211, condition212, condition213, condition214);
 	if condition211 and condition212 and condition213 and condition214 then
 	begin
 		ret = 1; return;
@@ -108,7 +108,7 @@ begin
 	condition206 = close < minlist(low[1],low[5],low[10],low[15],low[20],low[25],low[30]);
 	condition207 = ave130 - close < 25;
 		 
-	print("空-策略20: ", condition201, condition202, condition203, condition204, condition205, condition206, condition207);
+	print("策略20: ", condition201, condition202, condition203, condition204, condition205, condition206, condition207);
 	if condition201 and condition202 and condition203 and condition204 and condition205 and condition206 and condition207 then
 	begin
 		ret = 1; return;
@@ -133,7 +133,7 @@ begin
 	condition195 = difDir = -1 and difDir[1] = -1;
 	condition196 = ave130 - close < 25;
 
-	print("空-策略19: ", condition191, condition192, condition193, condition194, condition195, condition196);
+	print("策略19: ", condition191, condition192, condition193, condition194, condition195, condition196);
 	if condition191 and condition192 and condition193 and condition194 and condition195 and condition196 then
 	begin
 		ret = 1; return;
@@ -159,7 +159,7 @@ begin
     condition185 = (ave68 - close < 40) and (close < ave17);
 	condition186 = Highest(close, 180) - close > 60;
  
-    print("空-策略18: ", condition181, condition182, condition183, condition184, condition185, condition186);
+    print("策略18: ", condition181, condition182, condition183, condition184, condition185, condition186);
     if condition181 and condition182 and condition183 and condition184 and condition185 and condition186 then
     begin
         ret = 1; return;
@@ -184,7 +184,7 @@ begin
     condition174 = (difValue < 0 and difDir = -1) or (difValue > 0 and difDir = -1 and macdUnder = -1);
     condition175 = (close + 15) > ave34 and (close < ave34);
    
-    print("空-策略17: ", condition171, condition172, condition173, condition174, condition175);
+    print("策略17: ", condition171, condition172, condition173, condition174, condition175);
     if condition171 and condition172 and condition173 and condition174 and condition175 then
     begin
         ret = 1; return;
@@ -210,7 +210,7 @@ begin
     condition165 = (ave68 > ave34) and (ave34 > ave17);
     condition166 = AbsValue(ave68 - ave17) < 18 and AbsValue(ave68 - close) < 30;
 
-	print("空-策略16: ", condition161, condition162, condition163, condition164, condition165, condition166);
+	print("策略16: ", condition161, condition162, condition163, condition164, condition165, condition166);
     if condition161 and condition162 and condition163 and condition164 and condition165 and condition166 then
     begin
         ret = 1; return;
@@ -232,7 +232,7 @@ begin
 	condition154 = difDir = -1 and difValue < 0;
 	condition155 = ave68 - close < 35 and close < ave17;
 	
-	print("空-策略15: ", condition151, condition152, condition153, condition154, condition155);
+	print("策略15: ", condition151, condition152, condition153, condition154, condition155);
     if condition151 and condition152 and condition153 and condition154 and condition155 then
     begin
         ret = 1; return;
@@ -256,7 +256,7 @@ begin
     condition145 = (ave68 - close < 30) and (close < ave17);
 	condition146 = Highest(close, 180) - close > 60;
  
-    print("空-策略14: ", condition141, condition142, condition143, condition144, condition145, condition146);
+    print("策略14: ", condition141, condition142, condition143, condition144, condition145, condition146);
     if condition141 and condition142 and condition143 and condition144 and condition145 and condition146 then
     begin
         ret = 1; return;
@@ -280,7 +280,7 @@ begin
     condition135 = (ave68 - close < 35) and (close < ave17);
 	condition136 = Highest(close, 180) - close > 60;
  
-    print("空-策略13: ", condition131, condition132, condition133, condition134, condition135, condition136);
+    print("策略13: ", condition131, condition132, condition133, condition134, condition135, condition136);
     if condition131 and condition132 and condition133 and condition134 and condition135 and condition136 then
     begin
         ret = 1; return;
@@ -305,7 +305,7 @@ begin
     condition125 = (aveDir8[12] = 1) and (aveDir17[12] = 1) and (aveDir34[12] = 1) and (aveDir68[12] = 1);
     condition126 = (ave17[12] > ave34[12]) and (ave34[12] > ave68[12]) and close[12] > ave8[12];
       
-    print("空-策略12: ", condition121, condition122, condition123, condition124, condition125, condition126);
+    print("策略12: ", condition121, condition122, condition123, condition124, condition125, condition126);
     if condition121 and condition122 and condition123 and condition124 and condition125 and condition126 then
     begin
         ret = 1; return;
@@ -328,7 +328,7 @@ begin
     condition114 = ave68 - close < 25;
     condition115 = difDir = -1;
       
-    print("空-策略11: ", condition111, condition112, condition113, condition114, condition115);
+    print("策略11: ", condition111, condition112, condition113, condition114, condition115);
     if condition111 and condition112 and condition113 and condition114 and condition115 then
     begin
         ret = 1; return;
@@ -351,7 +351,7 @@ begin
     condition104 = difDir = -1 and (difValue < -1 and difValue > -6);
     condition105 = AbsValue(ave68 - close) < 35;
    
-    print("空-策略10: ", condition101, condition102, condition103, condition104, condition105);
+    print("策略10: ", condition101, condition102, condition103, condition104, condition105);
     if condition101 and condition102 and condition103 and condition104 and condition105 then
     begin
         ret = 1; return;
@@ -378,7 +378,7 @@ begin
     condition96 = AbsValue(maxlist(ave8, ave17, ave34, ave68) - minlist(ave8, ave17, ave34, ave68)) < 5;
     condition97 = AbsValue(close - minlist(ave8, ave17, ave34, ave68)) < 12;
    
-    print("空-策略09: ", condition91, condition92, condition93, condition94, condition95, condition96, condition97);
+    print("策略09: ", condition91, condition92, condition93, condition94, condition95, condition96, condition97);
     if condition91 and condition92 and condition93 and condition94 and condition95 and condition96 and condition97 then
     begin
         ret = 1; return;
@@ -402,7 +402,7 @@ begin
     condition85 = (ave68 > ave34) and (ave34 > ave17);
     condition86 = AbsValue(ave68 - ave17) < 18 and AbsValue(ave68 - close) < 30;
        
-    print("空-策略08: ", condition81, condition82, condition83, condition84, condition85, condition86);
+    print("策略08: ", condition81, condition82, condition83, condition84, condition85, condition86);
     if condition81 and condition82 and condition83 and condition84 and condition85 and condition86 then
     begin
         ret = 1; return;
@@ -424,7 +424,7 @@ begin
     condition74 = AbsValue(ave34 - close) < 15 and AbsValue(ave68 - close) < 10;
     condition75 = value2 > 350;
     
-	print("空-策略07: ", condition71, condition72, condition73, condition74, condition75);
+	print("策略07: ", condition71, condition72, condition73, condition74, condition75);
     if condition71 and condition72 and condition73 and condition74 and condition75 then
     begin
         ret = 1; return;
@@ -448,7 +448,7 @@ begin
     condition65 = (macdUnder = -1 and difDir = -1);
     condition66 = (close < ave68 and close < ave34 and close < ave17) and (ave34 - close < 15);
        
-    print("空-策略06: ", condition61, condition62, condition63, condition64, condition65, condition66);
+    print("策略06: ", condition61, condition62, condition63, condition64, condition65, condition66);
     if condition61 and condition62 and condition63 and condition64 and condition65 and condition66 then
     begin
         ret = 1; return;
@@ -470,7 +470,7 @@ begin
     condition54 = close > ave68;
     condition55 = ave8 - ave68 < 15;
        
-    print("空-策略05: ", condition51, condition52, condition53, condition54, condition55);
+    print("策略05: ", condition51, condition52, condition53, condition54, condition55);
     if condition51 and condition52 and condition53 and condition54 and condition55 then
     begin
         ret = 1; return;
@@ -494,7 +494,7 @@ begin
     condition45 = (ave17 - ave34) < 15;
     condition46 = value2 > 650;
        
-    print("空-策略04: ", condition41, condition42, condition43, condition44, condition45, condition46);
+    print("策略04: ", condition41, condition42, condition43, condition44, condition45, condition46);
     if condition41 and condition42 and condition43 and condition44 and condition45 and condition46 then
     begin
         ret = 1; return;
@@ -516,7 +516,7 @@ begin
     condition34 = (difValue < 0 and difDir = -1) or (difValue > 0 and difDir = -1 and macdUnder = -1);
     condition35 = (close + 10) > ave34 and (close < ave34);
        
-    print("空-策略03: ", condition31, condition32, condition33, condition34, condition35);
+    print("策略03: ", condition31, condition32, condition33, condition34, condition35);
     if condition31 and condition32 and condition33 and condition34 and condition35 then
     begin
         ret = 1; return;
@@ -538,7 +538,7 @@ begin
     condition24 = (difValue < 0 and difDir = -1) or (difValue > 0 and difDir = -1 and macdUnder = -1);
     condition25 = (close + 15) > ave34 and (close < ave34);
    
-    print("空-策略02: ", condition21, condition22, condition23, condition24, condition25);
+    print("策略02: ", condition21, condition22, condition23, condition24, condition25);
     if condition21 and condition22 and condition23 and condition24 and condition25 then
     begin
         ret = 1; return;
@@ -562,7 +562,7 @@ begin
     condition15 = close < ave8 and close < ave17 and close < ave34 and (close + 15) > ave34;
     condition16 = value2 > -2500;
        
-    print("空-策略01: ", condition11, condition12, condition13, condition14, condition15, condition16);
+    print("策略01: ", condition11, condition12, condition13, condition14, condition15, condition16);
     if condition11 and condition12 and condition13 and condition14 and condition15 and condition16 then
     begin
         ret = 1; return;

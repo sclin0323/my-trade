@@ -26,8 +26,9 @@ variable: macdUnder(0); macdUnder = Sign(difValue - macdValue);     // DIF 和 MA
 // 大盤多空判斷
 value1 = GetQuote("累計委買") - GetQuote("累計委賣");   // 委買口數差(成交) 作多: 數值越大越好
 value2 = GetQuote("累買成筆") - GetQuote("累賣成筆");   // 成交買賣差(成交) 作多: 數值越小越好
-value3 = GetQuote("標的漲跌幅");
-print("= 多 ",DateToString(todayDate),TimeToString(todayTime),"|","指數:",NumToStr(close, 0),"DIF值:",NumToStr(difValue,1),"DIF方向:",NumToStr(difDir,0),"|",NumToStr(value1, 2),NumToStr(value2, 0)," =");
+value3 = GetQuote("當日漲幅%");
+
+print("= 多 ",DateToString(todayDate),TimeToString(todayTime),"|","指數:",NumToStr(close, 0),"DIF值:",NumToStr(difValue,1),"DIF方向:",NumToStr(difDir,0),"|",NumToStr(value1, 2),NumToStr(value2, 0),value3," =");
 
 // 策略執行條件-1
 // 1. 130分鐘線向上
@@ -66,7 +67,7 @@ begin
 	condition133 = aveDir130 = 1 and aveDir130[5] = 1 and aveDir130[10] = 1 and aveDir130[15] = 1 and aveDir130[20] = 1 and aveDir130[25] = 1 and aveDir130[30] = 1;
 	condition134 = ave130 - ave130[30] > 1.8;
 
-	print("多-策略13: ", condition131, condition132, condition133, condition134);
+	print("策略13: ", condition131, condition132, condition133, condition134);
 	if condition131 and condition132 and condition133 and condition134 then
 	begin
 		ret = 1; return;
@@ -89,7 +90,7 @@ begin
     condition124 = ave8 + 30 < ave68;
     condition125 = value2[5] > 10;
      
-    print("多-策略12: ", condition121, condition122, condition123, condition124, condition125 );
+    print("策略12: ", condition121, condition122, condition123, condition124, condition125 );
     if condition121 and condition122 and condition123 and condition124 and condition125 then
     begin
         ret = 1; return;
@@ -113,7 +114,7 @@ begin
     condition115 = (ave17 > ave34) and (ave34 > ave68) and close > ave8;
     condition116 = (difValue < 3.5) and (difDir = 1);
      
-    print("多-策略11: ", condition111, condition112, condition113, condition114, condition115, condition116 );
+    print("策略11: ", condition111, condition112, condition113, condition114, condition115, condition116 );
     if condition111 and condition112 and condition113 and condition114 and condition115 and condition116 then
     begin
         ret = 1; return;
@@ -136,7 +137,7 @@ begin
     condition104 = (close - ave68 < 30) and (close > ave34);
     condition105 = difValue < 3.5 and difDir = 1;
      
-    print("多-策略10: ", condition101, condition102, condition103, condition104, condition105 );
+    print("策略10: ", condition101, condition102, condition103, condition104, condition105 );
     if condition101 and condition102 and condition103 and condition104 and condition105 then
     begin
         ret = 1; return;
@@ -162,7 +163,7 @@ begin
     condition95 = ((difValue < 0.55) and (difValue > 0)) and (difDir = 1);
     condition96 = (close > ave8) and (close - ave68 < 30);
      
-    print("多-策略09: ", condition91, condition92, condition93, condition94, condition95, condition96);
+    print("策略09: ", condition91, condition92, condition93, condition94, condition95, condition96);
     if condition91 and condition92 and condition93 and condition94 and condition95 and condition96 then
     begin
         ret = 1; return;
@@ -187,7 +188,7 @@ begin
     condition84 = ((difValue < 0.55) and (difValue > 0)) and (difDir = 1);
     condition85 = (ave17 - ave68 < 3) and (close > ave8) and (close - ave68 < 8);
      
-    print("多-策略08: ", condition81, condition82, condition83, condition84, condition85);
+    print("策略08: ", condition81, condition82, condition83, condition84, condition85);
     if condition81 and condition82 and condition83 and condition84 and condition85 then
     begin
         ret = 1; return;
@@ -218,7 +219,7 @@ begin
 	if todayTime <= 091500 then
 		condition71 = value2 < -1500;
      
-    print("多-策略07: ", condition71, condition72, condition73, condition74, condition75, condition76, condition77);
+    print("策略07: ", condition71, condition72, condition73, condition74, condition75, condition76, condition77);
     if condition71 and condition72 and condition73 and condition74 and condition75 and condition76 and condition77 then
     begin
         ret = 1; return;
@@ -240,7 +241,7 @@ begin
     condition64 = AbsValue(maxlist(ave8, ave17, ave34, ave68) - minlist(ave8, ave17, ave34, ave68)) < 6;
     condition65 = AbsValue(close - minlist(ave8, ave17, ave34, ave68)) < 6;
  
-    print("多-策略06: ", condition61, condition62, condition63, condition64, condition65);
+    print("策略06: ", condition61, condition62, condition63, condition64, condition65);
     if condition61 and condition62 and condition63 and condition64 and condition65 then
     begin
         ret = 1; return;
@@ -266,7 +267,7 @@ begin
 	condition56 = value2 < -200;
 	condition57 = (GetQuote("當日漲幅%") < 0.45) or (value2 < -1000);
      
-    print("多-策略05: ", condition51, condition52, condition53, condition54, condition55, condition56, condition57);
+    print("策略05: ", condition51, condition52, condition53, condition54, condition55, condition56, condition57);
     if condition51 and condition52 and condition53 and condition54 and condition55 and condition56 and condition57 then
     begin
         ret = 1; return;
@@ -289,7 +290,7 @@ begin
     condition44 = (macdUnder = 1) and difDir = 1;
     condition45 = (ave8 - ave68 > 1) and (ave8 - ave68 < 8);
      
-    print("多-策略04: ", condition41, condition42, condition43, condition44, condition45);
+    print("策略04: ", condition41, condition42, condition43, condition44, condition45);
     if condition41 and condition42 and condition43 and condition44 and condition45 then
     begin
         ret = 1; return;
@@ -309,7 +310,7 @@ begin
     condition33 = isAveRaiseOverMinutes(68, 50) and aveDir8 = 1;
 	condition34 = value2 < -600;
      
-    print("多-策略03: ", condition31, condition32, condition33, condition34);
+    print("策略03: ", condition31, condition32, condition33, condition34);
     if condition31 and condition32 and condition33 and condition34 then
     begin
         ret = 1; return;
@@ -334,7 +335,7 @@ begin
     condition25 = value2 < -300;
 	condition26 = (GetQuote("當日漲幅%") < 0.45) or (value2 < -1000);
     
-    print("多-策略02: ", condition21, condition22, condition23, condition24, condition25, condition26);
+    print("策略02: ", condition21, condition22, condition23, condition24, condition25, condition26);
     if condition21 and condition22 and condition23 and condition24 and condition25 and condition26 then
     begin
         ret = 1; return;
@@ -359,7 +360,7 @@ begin
 	condition15 = difDir = 1;
 	condition16 = (GetQuote("當日漲幅%") < 0.45) or (value2 < -1000);
      
-    print("多-策略01: ", condition11, condition12, condition13, condition14, condition15, condition16);
+    print("策略01: ", condition11, condition12, condition13, condition14, condition15, condition16);
     if condition11 and condition12 and condition13 and condition14 and condition15 and condition16 then
     begin
         ret = 1; return;

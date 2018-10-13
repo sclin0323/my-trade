@@ -47,7 +47,7 @@ begin
 	condition74 = difDir = -1;
 	condition75 = aveDir130 = -1 or GetQuote("當日漲幅%") < 0;
 	
-	print("多-平倉當天-策略7: ", condition71, condition72, condition73, condition74, condition75);
+	print("策略7: ", condition71, condition72, condition73, condition74, condition75);
 	if condition71 and condition72 and condition73 and condition74 and condition75 then
 	begin
 		ret = 1; return;
@@ -66,7 +66,7 @@ begin
 	condition62 = difDir = -1;
 	condition63 = (GetQuote("當日漲幅%") > 0.3 and aveDir130 = -1) or (GetQuote("當日漲幅%") < 0.3);
 	
-	print("多-平倉當天-策略6: ", condition61, condition62, condition63);
+	print("策略6: ", condition61, condition62, condition63);
 	if condition61 and condition62 and condition63 then
 	begin
 		ret = 1; return;
@@ -84,7 +84,7 @@ begin
 	condition52 = GetQuote("當日漲幅%") < 0;
 	condition53 = difDir = -1;
 	
-	print("多-平倉當天-策略5: ", condition51, condition52, condition53);
+	print("策略5: ", condition51, condition52, condition53);
 	if condition51 and condition52 and condition53 then
 	begin
 		ret = 1; return;
@@ -102,7 +102,7 @@ begin
 	condition42 = aveDir130 = -1;
 	condition43 = difDir = -1;
 	
-	print("多-平倉當天-策略4: ", condition41, condition42, condition43);
+	print("策略4: ", condition41, condition42, condition43);
 	if condition41 and condition42 and condition43 then
 	begin
 		ret = 1; return;
@@ -124,7 +124,7 @@ begin
 	condition34 = (GetQuote("當日漲幅%") < 0.5 and close - cost < 35) or (GetQuote("當日漲幅%") > 0.5 and close - cost < 30);
 	condition35 = highest(high, 68) - close > 15 and highest(high, 68) - close[1] > 15;
 	
-	print("多-平倉當天-策略3: ", condition31, condition32, condition33, condition34, condition35);
+	print("策略3: ", condition31, condition32, condition33, condition34, condition35);
 	if condition31 and condition32 and condition33 and condition34 and condition35 then
 	begin
 		ret = 1; return;
@@ -140,7 +140,7 @@ begin
 	condition21 = close - cost < 15 and close - cost > 3;
 	condition22 = difDir = -1 and difDir[1] = -1;
 	
-	print("多-平倉當天-策略2: ", condition21, condition22);
+	print("策略2: ", condition21, condition22);
 	if condition21 and condition22 then
 	begin
 		ret = 1; return;
@@ -160,7 +160,7 @@ begin
 	condition13 = (close - cost < 15) and (close[1] - cost < 15);
 	condition14 = difDir = -1 and difDir[1] = -1;
 	
-	print("多-平倉當天-策略1: ", condition11, condition12, condition13, condition14);
+	print("策略1: ", condition11, condition12, condition13, condition14);
 	if condition11 and condition12 and condition13 and condition14 then
 	begin
 		ret = 1; return;
