@@ -1,0 +1,55 @@
+// 執行頻率需為 15 分鐘
+if barinterval <> 15 then RaiseRunTimeError("請設定頻率為15分鐘");
+variable: todayDate(0); todayDate = GetField("Date"); 
+variable: todayTime(0); todayTime = GetField("Time");
+ 
+// 計算均線 
+variable: ave760(0); 	ave760 = Average(Close,760);			// 10日線均線	
+variable: aveDir760(0);	aveDir760 = Sign(ave760 - ave760[1]);	// 18小時均線方向
+  
+// 計算MACD
+input: FastLength(15), SlowLength(19), MACDLength(10);	// 依照XQ軟體預設值
+variable: difValue(0), macdValue(0), oscValue(0);
+MACD(weightedclose(), FastLength, SlowLength, MACDLength, difValue, macdValue, oscValue);
+variable: macdDir(0); macdDir = Sign(macdValue - macdValue[2]);		// MACD 方向
+variable: difDir(0); difDir = Sign(difValue - difValue[2]);			// DIF 方向 (向下 => -1)
+variable: macdUnder(0); macdUnder = Sign(difValue - macdValue);		// DIF 和 MACD 的上下位置
+
+// 1. 累計委差-市場氣氛 (大 => 多; 小 => 空)
+// 2. 成交筆差-多空力道 (大 => 多; 小 => 空)
+value1 = GetQuote("累計委買") - GetQuote("累計委賣");
+value2 = GetQuote("累賣成筆") - GetQuote("累買成筆");
+
+///////////////////// 交易格局 ///////////////////// 
+
+// 執行條件(ret = 1)
+// 1. 如果指數低於10日線 => 策略直接啟動
+condition11 = close < ave760;
+if condition11 then
+begin
+	print(DateToString(todayDate), TimeToString(todayTime),"指數低於10日線 => 策略直接啟動");
+	ret = 1;
+	return;
+end;
+
+// 2. 如果指數高於10日線 and 多空力道 < -1200 => 策略直接啟動(夜盤)
+condition21 = close > ave760 and value2 < -1200;
+condition22 = (todayTime >= 150000 and todayTime <= 235900) or (todayTime >= 000000 and todayTime <= 050000);
+if condition21 and condition22 then
+begin
+	print(DateToString(todayDate), TimeToString(todayTime),"指數高於10日線 and 多空力道 < -1200 => 策略直接啟動");
+	ret = 1;
+	return;
+end;
+
+// 3. 如果指數高於10日線 and 多空力道 < -1500 => 策略直接啟動(早盤)
+condition21 = close > ave760 and value2 < -1500;
+if condition21 then
+begin
+	print(DateToString(todayDate), TimeToString(todayTime),"指數高於10日線 and 多空力道 < -1200 => 策略直接啟動");
+	ret = 1;
+	return;
+end;
+
+print(DateToString(todayDate), TimeToString(todayTime),"其他 => 策略不啟動");
+
