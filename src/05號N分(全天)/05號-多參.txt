@@ -4,8 +4,12 @@ variable: todayDate(0); todayDate = GetField("Date");
 variable: todayTime(0); todayTime = GetField("Time");
  
 // 計算均線 
-variable: ave760(0); 	ave760 = Average(Close,760);			// 10日線均線	
-variable: aveDir760(0);	aveDir760 = Sign(ave760 - ave760[1]);	// 18小時均線方向
+variable: ave760(0); 	ave760 = Average(Close,760);				// 10日線均線	
+variable: ave1520(0); 	ave1520 = Average(Close,1520);				// 20日線均線	
+variable: ave4560(0); 	ave4560 = Average(Close,4560);				// 60日線均線	
+variable: aveDir760(0);	aveDir760 = Sign(ave760 - ave760[1]);		// 10日均線方向
+variable: aveDir1520(0);aveDir1520 = Sign(ave1520 - ave1520[1]);	// 20日均線方向
+variable: aveDir4560(0);aveDir4560 = Sign(ave4560 - ave4560[1]);	// 60日均線方向
   
 // 計算MACD
 input: FastLength(15), SlowLength(19), MACDLength(10);	// 依照XQ軟體預設值
@@ -20,9 +24,30 @@ variable: macdUnder(0); macdUnder = Sign(difValue - macdValue);		// DIF 和 MACD
 value1 = GetQuote("累計委買") - GetQuote("累計委賣");
 value2 = GetQuote("累賣成筆") - GetQuote("累買成筆");
 
+// 盤中資訊
+print("==============================================================");
+print("市場氣氛:",NumToStr(value1, 0),"多空力道:",NumToStr(value2, 0));
+
 ///////////////////// 交易格局 ///////////////////// 
 
-// 執行條件
+// 執行條件(ret != 1)
+// 1. 10日線 20日線 60日線 趨勢向下
+// 2. 指數低於20日線
+// 3. 指數離季線45點之內
+condition11 = aveDir760 = -1 and aveDir1520 = -1 and aveDir4560 = -1;
+condition12 = close < ave1520;
+condition13 = close + 45 > ave4560;
+if condition11 and condition12 and condition13 then
+begin
+	print(DateToString(todayDate), TimeToString(todayTime),"趨勢空頭 => 策略不啟動");
+	ret = 1;
+	return;
+end;
+
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// 執行條件(ret = 1)
 // 1. 如果指數高於10日線 => 策略直接啟動
 condition11 = close > ave760;
 if condition11 then

@@ -1,9 +1,7 @@
 // 執行頻率需為 N 分鐘
 variable: todayDate(0); todayDate = GetField("Date"); 
 variable: todayTime(0); todayTime = GetField("Time");
-          
-input: BasePrice(0);	// 進場 BasePrice 
-		  
+          		   
 // 計算均線 
 variable: ave2(0); 		ave2 = Average(Close,2);		// 2k 均線
 variable: ave45(0); 	ave45 = Average(Close,45);		// 45k 均線
@@ -15,7 +13,7 @@ variable: aveDir270(0);	aveDir270 = Sign(ave270 - ave270[1]);
 variable: aveDir1200(0);aveDir1200 = Sign(ave1200 - ave1200[1]);
 
 // 計算MACD
-input: FastLength(12), SlowLength(26), MACDLength(9);	// 依照XQ軟體預設值
+input: FastLength(15), SlowLength(19), MACDLength(10);	// 依照XQ軟體預設值15分
 variable: difValue(0), macdValue(0), oscValue(0);
 MACD(weightedclose(), FastLength, SlowLength, MACDLength, difValue, macdValue, oscValue);
 variable: macdDir(0); macdDir = Sign(macdValue - macdValue[2]);		// MACD 方向
@@ -37,15 +35,16 @@ print("市場氣氛:",NumToStr(value1, 0),"多空力道:",NumToStr(value2, 0));
 
 ///////////////////// 交易格局 ///////////////////// 
 
-// 指數要高於 BasePrice 才啟動策略 (BasePrice 要手動設定)
-// 1. 基礎單直接啟動; 加碼單則基礎單獲利 > 50點再進場
-condition1 = close > BasePrice and BasePrice <> 0;
-if condition1 then
+// 禮拜五夜盤不要再出手
+// 1. 禮拜五
+// 2. 夜盤
+condition1 = DayOfWeek(Date) = 5 and (todayTime >= 150000 and todayTime <= 235900);
+condition2 = DayOfWeek(Date) = 6 and (todayTime >= 000000 and todayTime <= 050000);
+if condition1 or condition2 then
 begin
-    print("指數要低於 BasePrice 才啟動策略 => 休息");
+    print("禮拜五夜盤不要再出手, 嚴防週末重大事件 => 休息");
     return;
 end;
-
 
 // 策略執行條件-1: 
 // 1. 15:00 to 18:00 休息
@@ -66,6 +65,16 @@ condition1 = highest(high,18) - close < 20;
 if condition1 then
 begin
     print("過去18K跌幅沒超過20點 => 休息!!");
+    return;
+end;
+
+// 月線向上時, 夜盤大跌超過0.8% 不要追空單
+condition1 = (todayTime >= 150000 and todayTime <= 235900) or (todayTime >= 000000 and todayTime <= 050000);
+condition2 = GetQuote("當日漲幅%") < -0.8;
+condition3 = aveDir270 = 1;
+if condition1 and condition2 and condition3 then
+begin
+    print("月線向上 and 夜盤大跌超過 0.8% 不要再追單 => 休息");
     return;
 end;
 

@@ -46,7 +46,21 @@ end;
 ///////////////////// 夜盤 - 交易策略 ///////////////////// 
 
 // 時間: 20:00 to 23:55 or 00:00 to 05:00
-// 夜盤出現急跌快跑
+// 夜盤出現大漲走勢 先跑再說
+// 1. 漲幅超過0.35%
+// 2. 獲利 < 15點
+// 3. 過去192K內大漲超過125點
+if (todayTime >= 200000 and todayTime <= 235500) or (todayTime >= 000000 and todayTime < 050000) then
+begin
+	condition321 = GetQuote("當日漲幅%") > 0.35;
+	condition322 = costPrice - close < 15;
+	condition323 = close - lowest(close, 192) > 125;
+	print("策略32: ", condition321, condition322, condition323);
+	if condition321 and condition322 and condition323 then
+	begin
+		ret = 1; return;
+	end;
+end;
 
 // 時間: 20:00 to 23:55 or 00:00 to 05:00
 // 夜盤停損出場不要廢話
@@ -63,14 +77,14 @@ end;
 // 時間: 20:00 to 23:55 or 00:00 to 05:00 (通常已經大漲了)
 // 夜盤由空逐漸走多出場
 // 1. 指數高於45k均線
-// 2. 64K內漲幅超過45
+// 2. 78K內漲幅超過45
 // 3. 大盤漲幅超過0.2
 // 4. DIF向上
 // 5. 45k向上超過32K(32/48)
 if (todayTime >= 200000 and todayTime <= 235500) or (todayTime >= 000000 and todayTime < 050000) then
 begin
 	condition301 = close > ave45;
-	condition302 = close - lowest(low, 64) - close > 45;
+	condition302 = close - lowest(low, 78) - close > 45;
 	condition303 = GetQuote("當日漲幅%") > 0.2;
 	condition304 = difDir = 1;
 	condition305 = Summation(aveDir45,48) >= 16;
@@ -105,7 +119,7 @@ end;
 // 5. 跌幅要少於-0.3以上
 if todayTime >= 085500 and todayTime < 134500 then
 begin
-	condition61 = costPrice - lowest(low, 60) > 260;
+	condition61 = costPrice - lowest(low, 180) > 260;
 	condition62 = costPrice - close < 215 and (costPrice - close[1] < 215 or costPrice - close[2] < 215);
 	condition63 = difDir = 1;
 	condition64 = aveDir9 = 1;
@@ -126,7 +140,7 @@ end;
 // 5. 跌幅要少於-0.3以上
 if todayTime >= 085500 and todayTime < 134500 then
 begin
-	condition51 = costPrice - lowest(low, 60) > 200;
+	condition51 = costPrice - lowest(low, 180) > 200;
 	condition52 = costPrice - close < 155 and (costPrice - close[1] < 155 or costPrice - close[2] < 155);
 	condition53 = difDir = 1;
 	condition54 = aveDir9 = 1;
@@ -147,7 +161,7 @@ end;
 // 5. 跌幅要少於-0.3以上
 if todayTime >= 085500 and todayTime < 134500 then
 begin
-	condition41 = costPrice - lowest(low, 60) > 140;
+	condition41 = costPrice - lowest(low, 180) > 140;
 	condition42 = costPrice - close < 100 and (costPrice - close[1] < 100 or costPrice - close[2] < 100);
 	condition43 = difDir = 1;
 	condition44 = aveDir9 = 1;
@@ -167,7 +181,7 @@ end;
 // 4. 9k均線方向向上 or 一小時大漲75點以上
 if todayTime >= 085500 and todayTime < 134500 then
 begin
-	condition31 = costPrice - lowest(low, 60) > 95;
+	condition31 = costPrice - lowest(low, 180) > 95;
 	condition32 = costPrice - close < 65 and (costPrice - close[1] < 65 or costPrice - close[2] < 65);
 	condition33 = difDir = 1;
 	condition34 = aveDir9 = 1 or (close - lowest(low,4) > 75);
@@ -183,13 +197,13 @@ end;
 // 1. 獲利25點之內
 // 2. 9k均線向上 or 一小時大漲75點以上
 // 3. DIF向上
-// 4. 近9k漲幅超過25點
+// 4. 近36k漲幅超過25點
 if todayTime >= 084000 and todayTime < 134500 then
 begin
 	condition21 = costPrice - close < 25;
 	condition22 = aveDir9 = 1 or (close - lowest(low,4) > 75);
 	condition23 = difDir = 1;
-	condition24 = close - lowest(close, 9) > 25;
+	condition24 = close - lowest(close, 36) > 25;
 	print("策略2: ", condition21, condition22, condition23, condition24);
 	if condition21 and condition22 and condition23 and condition24 then
 	begin
@@ -202,14 +216,14 @@ end;
 // 1. 如果紅盤 => 過去21k線內 DIF值有超過15k(包含)向上(Summation 大於9) or 如果黑盤 => 過去21k線內 DIF值有超過15k(包含)向上(Summation 大於11)
 // 2. DIF向上
 // 3. 指數高於9k均線
-// 4. 指數比過去21K線最低 漲點超過40點
+// 4. 指數比過去78K線最低 漲點超過40點
 // 5. 9k均線方向向上
 if todayTime >= 085500 and todayTime < 134500 then
 begin
 	condition11 = (GetQuote("當日漲幅%") > 0 and (Summation(difDir,21) > 9 or Summation(difDir,21) = 9)) or (GetQuote("當日漲幅%") < 0 and (Summation(difDir,21) > 11 or Summation(difDir,21) = 11));
 	condition12 = difDir = 1;
 	condition13 = close > ave9; 
-	condition14 = (close - lowest(low, 21)) > 40;
+	condition14 = (close - lowest(low, 78)) > 40;
 	condition15 = aveDir9 = 1;
 	print("策略1: ", condition11, condition12, condition13, condition14, condition15);
 	if condition11 and condition12 and condition13 and condition14 and condition15 then

@@ -17,9 +17,11 @@ variable: macdUnder(0); macdUnder = Sign(difValue - macdValue);		// DIF 和 MACD
 // 出場條件
 // 1. 如果漲幅不到0.25 => 15分DIF 7K向上
 // 2. 如果漲幅超過0.25 => 15分DIF 4K向上
+// 3. 如果漲幅超過0.35 => 15分DIF 2K向上
 condition11 = GetQuote("當日漲幅%") < 0.25 and (difDir = 1 and difDir[1] = 1 and difDir[2] = 1 and difDir[4] = 1 and difDir[6] = 1);
 condition12 = GetQuote("當日漲幅%") > 0.25 and (difDir = 1 and difDir[1] = 1 and difDir[2] = 1 and difDir[3] = 1);
-if condition11 or condition12 then
+condition13 = GetQuote("當日漲幅%") > 0.35 and (difDir = 1 and difDir[1] = 1);
+if condition11 or condition12 or condition13 then
 begin
 	print(DateToString(todayDate), TimeToString(todayTime),"出場條件符合 => 啟動出場");
 	ret = 1;

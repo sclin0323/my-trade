@@ -37,9 +37,11 @@ end;
 // 出場條件
 // 1. 如果跌幅不到0.25 => 15分DIF 7K向下
 // 2. 如果跌幅超過0.25 => 15分DIF 4K向下
+// 3. 如果跌幅超過0.35 => 15分DIF 2K向下
 condition11 = GetQuote("當日漲幅%") > -0.25 and (difDir = -1 and difDir[1] = -1 and difDir[2] = -1 and difDir[4] = -1 and difDir[6] = -1);
 condition12 = GetQuote("當日漲幅%") < -0.25 and (difDir = -1 and difDir[1] = -1 and difDir[2] = -1 and difDir[3] = -1);
-if condition11 or condition12 then
+condition13 = GetQuote("當日漲幅%") < -0.35 and (difDir = -1 and difDir[1] = -1);
+if condition11 or condition12 or condition3 then
 begin
 	print(DateToString(todayDate), TimeToString(todayTime),"出場條件符合 => 啟動出場");
 	ret = 1;

@@ -46,7 +46,39 @@ end;
 ///////////////////// 夜盤 - 交易策略 ///////////////////// 
 
 // 時間: 20:00 to 23:55 or 00:00 to 05:00
-// 夜盤出現大跌走勢快跑
+// 嚴防夜盤出現超大跌走勢 先跑再說 (大盤緩漲急跌)
+// 1. 跌幅超過0.2%
+// 2. 獲利 < 15點
+// 3. 過去192K內大跌超過175點
+if (todayTime >= 200000 and todayTime <= 235500) or (todayTime >= 000000 and todayTime < 050000) then
+begin
+	condition331 = GetQuote("當日漲幅%") < -0.2;
+	condition332 = close - costPrice < 15;
+	condition333 = highest(close, 192) - close > 175;
+	print("策略33: ", condition331, condition332, condition333);
+	if condition331 and condition332 and condition333 then
+	begin
+		ret = 1; return;
+	end;
+end;
+
+// 時間: 20:00 to 23:55 or 00:00 to 05:00
+// 嚴防夜盤出現大跌走勢 先跑再說 (大盤緩漲急跌)
+// 1. 跌幅超過0.35%
+// 2. 獲利 < 15點
+// 3. 過去192K內大跌超過125點
+if (todayTime >= 200000 and todayTime <= 235500) or (todayTime >= 000000 and todayTime < 050000) then
+begin
+	condition321 = GetQuote("當日漲幅%") < -0.35;
+	condition322 = close - costPrice < 15;
+	condition323 = highest(close, 192) - close > 125;
+	print("策略32: ", condition321, condition322, condition323);
+	if condition321 and condition322 and condition323 then
+	begin
+		ret = 1; return;
+	end;
+end;
+
 
 // 時間: 20:00 to 23:55 or 00:00 to 05:00
 // 夜盤停損出場不要廢話
@@ -63,14 +95,14 @@ end;
 // 時間: 20:00 to 23:55 or 00:00 to 05:00 (通常已經大跌了)
 // 夜盤由多逐漸走空出場
 // 1. 指數低於45k均線
-// 2. 64K內跌幅超過45
+// 2. 78K內跌幅超過45
 // 3. 大盤跌幅超過0.2
 // 4. DIF向下
 // 5. 45k向下超過32K(32/48)
 if (todayTime >= 200000 and todayTime <= 235500) or (todayTime >= 000000 and todayTime < 050000) then
 begin
 	condition301 = close < ave45;
-	condition302 = highest(high, 64) - close > 45;
+	condition302 = highest(high, 78) - close > 45;
 	condition303 = GetQuote("當日漲幅%") < -0.2;
 	condition304 = difDir = -1;
 	condition305 = Summation(aveDir45,48) <= -16;
@@ -105,7 +137,7 @@ end;
 // 5. 漲幅要低於0.3以下
 if todayTime >= 085500 and todayTime < 134500 then
 begin
-	condition61 = highest(high, 60) - costPrice > 260;
+	condition61 = highest(high, 180) - costPrice > 260;
 	condition62 = close - costPrice < 215 and (close[1] - costPrice < 215 or close[2] - costPrice < 215);
 	condition63 = difDir = -1;
 	condition64 = aveDir9 = -1;
@@ -126,7 +158,7 @@ end;
 // 5. 漲幅要低於0.3以下
 if todayTime >= 085500 and todayTime < 134500 then
 begin
-	condition51 = highest(high, 60) - costPrice > 200;
+	condition51 = highest(high, 180) - costPrice > 200;
 	condition52 = close - costPrice < 155 and (close[1] - costPrice < 155 or close[2] - costPrice < 155);
 	condition53 = difDir = -1;
 	condition54 = aveDir9 = -1;
@@ -147,7 +179,7 @@ end;
 // 5. 漲幅要低於0.3以下
 if todayTime >= 085500 and todayTime < 134500 then
 begin
-	condition41 = highest(high, 60) - costPrice > 140;
+	condition41 = highest(high, 180) - costPrice > 140;
 	condition42 = close - costPrice < 100 and (close[1] - costPrice < 100 or close[2] - costPrice < 100);
 	condition43 = difDir = -1;
 	condition44 = aveDir9 = -1;
@@ -167,7 +199,7 @@ end;
 // 4. 9k均線方向向下 or 一小時大跌75點
 if todayTime >= 085500 and todayTime < 134500 then
 begin
-	condition31 = highest(high, 60) - costPrice > 95;
+	condition31 = highest(high, 180) - costPrice > 95;
 	condition32 = close - costPrice < 65 and (close[1] - costPrice < 65 or close[2] - costPrice < 65);
 	condition33 = difDir = -1;
 	condition34 = aveDir9 = -1 or (highest(high,5) - close > 75);
@@ -183,13 +215,13 @@ end;
 // 1. 獲利25點之內
 // 2. 9k均線向下 or 一小時大跌75點
 // 3. DIF向下
-// 4. 近9k跌幅超過25點
+// 4. 近36k跌幅超過25點
 if todayTime >= 084000 and todayTime < 134500 then
 begin
 	condition21 = close - costPrice < 25;
 	condition22 = aveDir9 = -1 or (highest(high,5) - close > 75);
 	condition23 = difDir = -1;
-	condition24 = highest(close, 9) - close > 25;
+	condition24 = highest(close, 36) - close > 25;
 	print("策略2: ", condition21, condition22, condition23, condition24);
 	if condition21 and condition22 and condition23 and condition24 then
 	begin
@@ -202,14 +234,14 @@ end;
 // 1. 如果紅盤 => 過去21k線內 DIF值有超過15k(包含)向下(Summation 小於-11) Or 如果黑盤 => 過去21k線內 DIF值有超過15k(包含)向下(Summation 小於-9)
 // 2. DIF向下
 // 3. 指數低於9k均線
-// 4. 指數比過去21K線最高 跌點超過40點
+// 4. 指數比過去78K線最高 跌點超過40點
 // 5. 9k均線方向向下
 if todayTime >= 085500 and todayTime < 134500 then
 begin
 	condition11 = (GetQuote("當日漲幅%") > 0 and ((Summation(difDir,21) < -11 or Summation(difDir,21) = -11))) or (GetQuote("當日漲幅%") < 0 and ((Summation(difDir,21) < -9 or Summation(difDir,21) = -9)));
 	condition12 = difDir = -1;
 	condition13 = close < ave9;
-	condition14 = highest(high, 21) - close > 40;
+	condition14 = highest(high, 78) - close > 40;
 	condition15 = aveDir9 = -1;
 	print("策略1: ", condition11, condition12, condition13, condition14, condition15);
 	if condition11 and condition12 and condition13 and condition14 and condition15 then

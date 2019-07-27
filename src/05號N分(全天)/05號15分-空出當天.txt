@@ -14,7 +14,7 @@ variable: ave130(0); 	ave130 = Average(Close,130);			// 130分鐘均線
 variable: aveDir130(0);	aveDir130 = Sign(ave130 - ave130[1]);	// 130分鐘均線方向
 
 // 計算MACD
-input: FastLength(18), SlowLength(32), MACDLength(12);	// 依照XQ軟體預設值
+input: FastLength(18), SlowLength(32), MACDLength(12);	// 依照XQ軟體預設值1分
 variable: difValue(0), macdValue(0), oscValue(0);
 MACD(weightedclose(), FastLength, SlowLength, MACDLength, difValue, macdValue, oscValue);
 variable: macdDir(0); macdDir = Sign(macdValue - macdValue[2]);		// MACD 方向
@@ -26,6 +26,40 @@ print("時間",DateToString(todayDate),TimeToString(todayTime),"指數:",NumToSt
 
 
 ///////////////////// 交易策略 ///////////////////// 
+
+// TEMP 時間: 收盤前離場 and 獲利<35點
+// 策略3: 夜盤收盤前, 獲利小於35點 出場不留倉
+// 1. 獲利 < 35點 and 指數跌幅小於0.3
+// 2. 獲利 < 10點
+if (todayTime >= 043000 and todayTime < 050000) then
+begin
+	condition31 = cost - close < 35 and GetQuote("當日漲幅%") > -0.3;
+	condition32 = cost - close < 10;
+	print("策略3: ", condition31, condition32);
+	if condition31 or condition32 then
+	begin
+		ret = 1; return;
+	end;
+end;
+
+// 時間: 20:00 to 23:55 OR 00:00 to 05:00
+// 策略2: 15分線進場, 當天停損出場
+// 1. 130分線連續3分鐘向上
+// 2. 指數高於130分線3分鐘
+// 3. 虧損連續3分鐘超過23點
+// 4. DIF向上
+if (todayTime >= 200000 and todayTime <= 235500) or (todayTime >= 000000 and todayTime < 050000) then
+begin
+	condition21 = aveDir130 = 1 and aveDir130[1] = 1 and aveDir130[2] = 1;
+	condition22 = close > ave130 and close[1] > ave130[1] and close[2] > ave130[2];
+	condition23 = close - cost > 23 and close[1] - cost > 23;
+	condition24 = difDir = 1 and difDir[1] = 1;
+	print("策略2: ", condition21, condition22, condition23, condition24);
+	if condition21 and condition22 and condition23 and condition24 then
+	begin
+		ret = 1; return;
+	end;
+end;
 
 // 時間: 09:00 to 13:45
 // 策略1: 15分線進場, 當天停損出場

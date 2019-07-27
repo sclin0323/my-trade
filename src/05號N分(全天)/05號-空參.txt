@@ -4,8 +4,12 @@ variable: todayDate(0); todayDate = GetField("Date");
 variable: todayTime(0); todayTime = GetField("Time");
  
 // 計算均線 
-variable: ave760(0); 	ave760 = Average(Close,760);			// 10日線均線	
-variable: aveDir760(0);	aveDir760 = Sign(ave760 - ave760[1]);	// 18小時均線方向
+variable: ave760(0); 	ave760 = Average(Close,760);				// 10日線均線	
+variable: ave1520(0); 	ave1520 = Average(Close,1520);				// 20日線均線	
+variable: ave4560(0); 	ave4560 = Average(Close,4560);				// 60日線均線	
+variable: aveDir760(0);	aveDir760 = Sign(ave760 - ave760[1]);		// 10日均線方向
+variable: aveDir1520(0);aveDir1520 = Sign(ave1520 - ave1520[1]);	// 20日均線方向
+variable: aveDir4560(0);aveDir4560 = Sign(ave4560 - ave4560[1]);	// 60日均線方向
   
 // 計算MACD
 input: FastLength(15), SlowLength(19), MACDLength(10);	// 依照XQ軟體預設值
@@ -21,6 +25,33 @@ value1 = GetQuote("累計委買") - GetQuote("累計委賣");
 value2 = GetQuote("累賣成筆") - GetQuote("累買成筆");
 
 ///////////////////// 交易格局 ///////////////////// 
+
+// 除權息期間, 易漲難跌(ret != 1)
+// 1. 指數高於月線 and 月線向上
+// 2. 每年6 7 8三個月份
+condition111 = close > ave1520 and aveDir1520 = 1;
+condition112 = month(date) = 6 or month(date) = 7 or month(date) = 8;
+if condition111 and condition112 then
+begin
+	print(DateToString(todayDate), TimeToString(todayTime),"除權息期間, 易漲難跌 => 策略不啟動");
+	return;
+end;
+
+
+// 執行條件(ret != 1)
+// 1. 10日線 20日線 60日線 趨勢向上
+// 2. 指數站上 20日線
+// 3. 指數離季線45點之內
+condition101 = aveDir760 = 1 and aveDir1520 = 1 and aveDir4560 = 1;
+condition102 = close > ave1520;
+condition103 = close < ave4560 + 45;
+if condition101 and condition102 and condition103 then
+begin
+	print(DateToString(todayDate), TimeToString(todayTime),"趨勢多頭 => 策略不啟動");
+	return;
+end;
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // 執行條件(ret = 1)
 // 1. 如果指數低於10日線 => 策略直接啟動
@@ -43,8 +74,8 @@ begin
 end;
 
 // 3. 如果指數高於10日線 and 多空力道 < -1500 => 策略直接啟動(早盤)
-condition21 = close > ave760 and value2 < -1500;
-if condition21 then
+condition31 = close > ave760 and value2 < -1500;
+if condition31 then
 begin
 	print(DateToString(todayDate), TimeToString(todayTime),"指數高於10日線 and 多空力道 < -1200 => 策略直接啟動");
 	ret = 1;
